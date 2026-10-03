@@ -2,7 +2,7 @@
 
 Analysis and figure code for:
 
-> Yang T, *et al.* **Extrachromosomal *MYCN* Amplification Defines a Replication Stress-Addicted Neuroblastoma Subset with Selective Vulnerability to CHK1 Inhibition.** *Journal*, Year. DOI: `TODO`
+> Yang T, *et al.* **Extrachromosomal *MYCN* Amplification Defines a Replication Stress-Addicted Neuroblastoma Subset with Selective Vulnerability to CHK1 Inhibition.** 
 
 This repository covers the whole-genome sequencing (WGS) and RNA-seq analyses of 21 neuroblastoma cell lines behind **Figures 1 and 2**:
 - ecDNA detection
@@ -94,13 +94,3 @@ Run the folders in numeric order.
 | fgsea | 1.22.0 |
 | msigdbr (MSigDB) | ____ (v2026.1.Hs) |
 | Python | ____ |
-| pandas / numpy / matplotlib / scipy / adjustText | ____ |
-
-## Data availability
-
-- **Raw sequencing data:** `TODO` (accession, or as stated in the manuscript).
-- **Intermediate files:** available from the corresponding authors upon reasonable request.
-
-## Contact
-
-Ting Yang: `TODO email`; Ludmil B. Alexandrov: L2alexandrov@health.ucsd.edu
