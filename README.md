@@ -25,6 +25,7 @@ This repository covers the whole-genome sequencing (WGS) and RNA-seq analyses of
 ## Repository structure
 
 ```
+├── samples.tsv                          # cell line IDs, names, ecDNA group
 ├── 01_wgs_alignment/
 │   └── bwa_mem_markduplicates.pbs       # BWA-MEM → samtools sort → Picard MarkDuplicates
 ├── 02_ecDNA/
