@@ -1,0 +1,39 @@
+#!/bin/bash
+#PBS -q <queue>
+#PBS -A <account>
+#PBS -l nodes=1:ppn=28
+#PBS -l walltime=500:00:00
+#PBS -V
+#PBS -N EVC_Talign_CHP134
+#PBS -o CHP134_Talign.o
+#PBS -e CHP134_Talign.e
+
+# WGS alignment + duplicate marking (shown for CHP134; run identically for every cell line).
+
+# ── Paths: edit before running ───────────────────────────────────────────────
+SAMPLE=CHP134
+CONDA_BASE=/path/to/conda                                   # output of `conda info --base`
+REF_FASTA=/path/to/references/GRCh38.d1.vd1/GRCh38.d1.vd1.fa
+FASTQ_DIR=/path/to/wgs/fastq                                # contains ${SAMPLE}_1.fastq.gz, ${SAMPLE}_2.fastq.gz
+WORK_DIR=/path/to/wgs/alignment                             # output: ${WORK_DIR}/${SAMPLE}/${SAMPLE}_tumor_mkdp.bam
+TMP_DIR=/path/to/tmp                                        # Picard temporary files
+# ─────────────────────────────────────────────────────────────────────────────
+
+source ${CONDA_BASE}/etc/profile.d/conda.sh
+conda activate evc_main
+echo === Starting alignment on sample ${SAMPLE} at $(date)===
+>&2 echo "=== Starting alignment on sample ${SAMPLE} at $(date)=== "
+cd ${WORK_DIR}
+mkdir -p ${SAMPLE}
+cd ${SAMPLE}
+echo starting aligning tumor at $(date)
+alignS=$SECONDS
+bwa mem -T 0 -t $(nproc) -R "@RG\tID:${SAMPLE}\tSM:${SAMPLE}_tumor\tPL:ILLUMINA" ${REF_FASTA} ${FASTQ_DIR}/${SAMPLE}_1.fastq.gz ${FASTQ_DIR}/${SAMPLE}_2.fastq.gz | samtools view -bh --input-fmt-option nthreads=$(nproc) | samtools sort -@ $(nproc) > ${SAMPLE}_tumor_raw.bam
+alignT=$(($SECONDS - $alignS))
+echo alignment took $(echo a|awk '{print '"$alignT"'/3600}') hours
+echo starting markDuplicates tumor at $(date)
+mkdpS=$SECONDS
+picard MarkDuplicates ASSUME_SORT_ORDER=coordinate MAX_FILE_HANDLES=4000 CREATE_INDEX=true -Djava.io.tmpdir=${TMP_DIR} -XX:ParallelGCThreads=$(nproc) -Xmx4g VALIDATION_STRINGENCY=STRICT I=${SAMPLE}_tumor_raw.bam O=${SAMPLE}_tumor_mkdp.bam M=${SAMPLE}_tumor_markDuplicates_Matrix.txt
+mkdpT=$(($SECONDS - $mkdpS))
+echo markduplicate took $(echo a|awk '{print '"$mkdpT"'/3600}') hours
+echo job ends at $(date)
