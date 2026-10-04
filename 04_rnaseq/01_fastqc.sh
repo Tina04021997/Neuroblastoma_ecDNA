@@ -19,9 +19,9 @@
 mamba activate rna-seq
 
 # ── Paths: edit before running ───────────────────────────────────────────────
-WORK_DIR=/path/to/rnaseq                             # contains list.txt (one sample ID per line)
+WORK_DIR=/path/to/rnaseq                        
 OUT_DIR=${WORK_DIR}/fastqc
-FASTQ_DIR=/path/to/rnaseq/fastq                      # ${FASTQ_DIR}/<sample>/<sample>_1.fq.gz, _2.fq.gz
+FASTQ_DIR=/path/to/rnaseq/fastq                     
 # ─────────────────────────────────────────────────────────────────────────────
 
 ## Create output folder
