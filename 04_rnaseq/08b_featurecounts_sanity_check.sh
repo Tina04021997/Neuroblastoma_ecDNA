@@ -4,7 +4,7 @@
 # and write reference_column.txt (gene IDs) used by 08_merge_counts.sh.
 
 # ── Paths: edit before running ───────────────────────────────────────────────
-SAMPLE="KAN"                                                # any one sample; its gene-ID column becomes the reference
+SAMPLE="KAN"                                              
 WORK_DIR=/path/to/rnaseq/featureCounts
 # ─────────────────────────────────────────────────────────────────────────────
 
