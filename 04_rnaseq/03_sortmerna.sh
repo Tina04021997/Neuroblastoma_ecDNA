@@ -1,8 +1,8 @@
 #!/bin/bash
-# Job generator: writes one SLURM script per sample (<sample>_sortRNA.sh), then submit with sbatch.
+# Writes one SLURM script per sample (<sample>_sortRNA.sh), then submit with sbatch.
 
 # ── Paths: edit before running ───────────────────────────────────────────────
-WORK_DIR=/path/to/rnaseq                             # contains list.txt (one sample ID per line)
+WORK_DIR=/path/to/rnaseq                         
 RRNA_DATABASE=/path/to/references/SortMeRNA/rRNA_databases_v4.3.6
 # ─────────────────────────────────────────────────────────────────────────────
 
