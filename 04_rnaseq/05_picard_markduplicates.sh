@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ── Paths: edit before running ───────────────────────────────────────────────
-SAMPLE_LIST=/path/to/sample_list.txt                        # one sample ID per line
-STAR_DIR=/path/to/rnaseq/STAR                               # STAR output
+SAMPLE_LIST=/path/to/sample_list.txt                    
+STAR_DIR=/path/to/rnaseq/STAR                            
 OUT_DIR=/path/to/rnaseq/markDP
 # ─────────────────────────────────────────────────────────────────────────────
 
