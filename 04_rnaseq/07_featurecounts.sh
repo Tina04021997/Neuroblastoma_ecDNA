@@ -1,9 +1,9 @@
 #!/bin/bash
-# Job generator: writes one SLURM script per sample (<sample>_featureCounts.sh), then submit with sbatch.
+# Writes one SLURM script per sample (<sample>_featureCounts.sh), then submit with sbatch.
 
 # ── Paths: edit before running ───────────────────────────────────────────────
-WORK_DIR=/path/to/rnaseq                             # contains list.txt (one sample ID per line)
-ANNOTATION_PATH=/path/to/references/STAR/GRCh38             # contains gencode.v44.basic.annotation.gtf
+WORK_DIR=/path/to/rnaseq                             
+ANNOTATION_PATH=/path/to/references/STAR/GRCh38            
 # ─────────────────────────────────────────────────────────────────────────────
 
 cd ${WORK_DIR}
