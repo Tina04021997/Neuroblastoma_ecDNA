@@ -20,9 +20,9 @@
 mamba activate rna-seq
 
 # ── Paths: edit before running ───────────────────────────────────────────────
-WORK_DIR=/path/to/rnaseq                             # contains list.txt (one sample ID per line)
+WORK_DIR=/path/to/rnaseq                      
 OUT_DIR=${WORK_DIR}/featureCounts
-STAR_DIR=${WORK_DIR}/STAR                                   # must match the BAM paths recorded in the featureCounts headers
+STAR_DIR=${WORK_DIR}/STAR                   
 # ─────────────────────────────────────────────────────────────────────────────
 
 cd $OUT_DIR
