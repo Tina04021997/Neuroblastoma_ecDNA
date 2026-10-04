@@ -12,11 +12,11 @@
 
 # ── Paths: edit before running ───────────────────────────────────────────────
 SAMPLE=CHP134
-CONDA_BASE=/path/to/conda                                   # output of `conda info --base`
+CONDA_BASE=/path/to/conda                                
 REF_FASTA=/path/to/references/GRCh38.d1.vd1/GRCh38.d1.vd1.fa
-FASTQ_DIR=/path/to/wgs/fastq                                # contains ${SAMPLE}_1.fastq.gz, ${SAMPLE}_2.fastq.gz
-WORK_DIR=/path/to/wgs/alignment                             # output: ${WORK_DIR}/${SAMPLE}/${SAMPLE}_tumor_mkdp.bam
-TMP_DIR=/path/to/tmp                                        # Picard temporary files
+FASTQ_DIR=/path/to/wgs/fastq                              
+WORK_DIR=/path/to/wgs/alignment                         
+TMP_DIR=/path/to/tmp                                  
 # ─────────────────────────────────────────────────────────────────────────────
 
 source ${CONDA_BASE}/etc/profile.d/conda.sh
