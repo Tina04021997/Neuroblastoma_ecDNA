@@ -7,8 +7,8 @@ library(GenomicRanges)
 
 SAMPLE='NGP'
 # ── Paths: edit before running ──────────────────────────────────────────────
-SV_DIR='/path/to/shatterseek/sv_files/sv_'          # prefix of sv_<sample>.txt (03_format_sv_for_shatterseek.py)
-CN_DIR='/path/to/shatterseek/cn_files/'             # <sample>_cn.txt (04_format_cn_for_shatterseek.py)
+SV_DIR='/path/to/shatterseek/sv_files/sv_'    
+CN_DIR='/path/to/shatterseek/cn_files/'           
 Results_DIR='/path/to/shatterseek/results/'
 
 sv = read.delim(paste0(SV_DIR, SAMPLE,'.txt'), sep='\t')
@@ -51,10 +51,9 @@ chromothripsis <- shatterseek(
                 genome="hg38")
 
 file_path <- paste0(SAMPLE, "_summary.txt")
-# Write the data to a text file
 write.table(chromothripsis@chromSummary, file = file_path, sep = "\t", quote = FALSE, row.names = FALSE)
 
-### MODIFY THE FOLLOWING CHR2 TO YOUR TARGET ONES ###
+### MODIFY THE FOLLOWING CHR2 TO TARGETED ONES ###
 
 plots_chr1 <- plot_chromothripsis(ShatterSeek_output = chromothripsis,
               chr = "1", sample_name=SAMPLE, genome="hg38")
