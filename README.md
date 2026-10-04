@@ -73,12 +73,12 @@ Run the folders in numeric order.
 |---|---|
 | Reference genome (WGS) | GRCh38.d1.vd1 |
 | Reference genome / annotation (RNA-seq) | GENCODE GRCh38 primary assembly, GENCODE v44 basic |
-| BWA-MEM | ____ |
-| SAMtools | ____ |
+| BWA-MEM | 0.7.17-r1188 |
+| SAMtools | 1.9 |
 | Picard | 2.18.27 |
 | AmpliconSuite-pipeline | 1.2.2 |
-| CNVkit | 0.9.12 |
-| AmpliconArchitect | ____ |
+| CNVkit | 0.9.10 |
+| AmpliconArchitect | 1.4.0 |
 | AmpliconClassifier | 1.1.1 |
 | CycleViz | 0.2.2 |
 | DELLY | 1.7.2 |
@@ -89,8 +89,7 @@ Run the folders in numeric order.
 | STAR | 2.7.10b |
 | StringTie | 2.2.1 |
 | Subread (featureCounts) | 2.0.6 |
-| R | ____ |
+| R | 4.2.2 |
 | DESeq2 | 1.36.0 |
 | fgsea | 1.22.0 |
-| msigdbr (MSigDB) | ____ (v2026.1.Hs) |
-| Python | ____ |
+| msigdbr (MSigDB) | 26.1.0 (v2026.1.Hs) |
