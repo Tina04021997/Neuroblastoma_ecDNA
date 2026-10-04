@@ -1,11 +1,11 @@
 #!/bin/bash
-# Job generator: writes one SLURM script per sample (<sample>_AA.sh), then submit with sbatch.
+# Writes one SLURM script per sample (<sample>_AA.sh), then submit with sbatch.
 
 # ── Paths: edit before running ───────────────────────────────────────────────
-WORK_PATH=/path/to/ecDNA_analysis                           # AmpliconSuite output; contains list.txt (one sample ID per line)
-BAM_DIR=/path/to/wgs/alignment                              # ${BAM_DIR}/<sample>/<sample>_tumor_mkdp.bam (01_wgs_alignment)
-AMPSUITE_DIR=/path/to/AmpliconSuite-pipeline                # contains PrepareAA.py
-AMPSUITE_ENV=/path/to/conda/envs/ampsuite                   # conda env providing cnvkit.py, python3, samtools
+WORK_PATH=/path/to/ecDNA_analysis                 
+BAM_DIR=/path/to/wgs/alignment                            
+AMPSUITE_DIR=/path/to/AmpliconSuite-pipeline         
+AMPSUITE_ENV=/path/to/conda/envs/ampsuite                 
 # ─────────────────────────────────────────────────────────────────────────────
 
 cd $WORK_PATH
