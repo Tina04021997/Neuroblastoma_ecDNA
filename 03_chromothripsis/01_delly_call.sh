@@ -1,14 +1,14 @@
 #!/bin/bash
-# Job generator: writes one SLURM script per sample (<sample>_Delly.sh), then submit with sbatch.
+# Writes one SLURM script per sample (<sample>_Delly.sh), then submit with sbatch.
 
 # ── Paths: edit before running ───────────────────────────────────────────────
-sample_file=/path/to/sample_list.txt                        # one sample ID per line
-OUT_DIR=/path/to/delly                                      # output: ${OUT_DIR}/<sample>/<sample>.vcf
-BAM_DIR=/path/to/wgs/alignment                              # ${BAM_DIR}/<sample>/<sample>_tumor_mkdp.bam
-DELLY=/path/to/delly_v1.7.2_linux_x86_64bit                 # DELLY v1.7.2 static binary
-EXCLUDE=/path/to/references/Delly/hg38.cen                  # centromere exclusion list
+sample_file=/path/to/sample_list.txt                  
+OUT_DIR=/path/to/delly                                  
+BAM_DIR=/path/to/wgs/alignment                            
+DELLY=/path/to/delly_v1.7.2_linux_x86_64bit              
+EXCLUDE=/path/to/references/Delly/hg38.cen               
 REF_FASTA=/path/to/references/GRCh38.d1.vd1/GRCh38.d1.vd1.fa
-CONDA_BASE=/path/to/conda                                   # output of `conda info --base`
+CONDA_BASE=/path/to/conda                           
 # ─────────────────────────────────────────────────────────────────────────────
 
 # Loop through each sample in the sample file
