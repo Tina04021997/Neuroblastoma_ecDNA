@@ -59,8 +59,6 @@ This repository covers the whole-genome sequencing (WGS) and RNA-seq analyses of
 
 Run the folders in numeric order.
 
-- **Paths:** each script starts with a `Paths: edit before running` block, and scheduler headers use `<partition>`/`<account>` placeholders. Commands and parameters are as used in the paper.
-- **Job generators:** most cluster scripts write one job script per sample, which is then submitted with `sbatch` or `qsub`.
 - **Single-sample scripts:** these are shown for CHP134 and were run identically for every cell line.
 - **STAR 2-pass:** run samples one at a time. Each sample rebuilds a shared splice-junction index.
 - **Manual tables:**
