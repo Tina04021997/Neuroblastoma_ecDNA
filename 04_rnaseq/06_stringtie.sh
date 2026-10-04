@@ -1,12 +1,12 @@
 #!/bin/bash
-# Job generator: writes one PBS script per sample (<sample>_stringtie.sh), then submit with qsub.
+# Writes one PBS script per sample (<sample>_stringtie.sh), then submit with qsub.
 
 # ── Paths: edit before running ───────────────────────────────────────────────
-SAMPLE_LIST=/path/to/sample_list.txt                        # one sample ID per line
-MARKDP_DIR=/path/to/rnaseq/markDP                           # output of 05_picard_markduplicates.sh
+SAMPLE_LIST=/path/to/sample_list.txt                     
+MARKDP_DIR=/path/to/rnaseq/markDP                        
 GTF=/path/to/references/STAR/GRCh38/gencode.v44.basic.annotation.gtf
 OUT_DIR=/path/to/rnaseq/stringtie
-CONDA_BASE=/path/to/conda                                   # output of `conda info --base`
+CONDA_BASE=/path/to/conda                                 
 # ─────────────────────────────────────────────────────────────────────────────
 
 for file in $(cat ${SAMPLE_LIST}); do echo -e "#!/bin/bash
