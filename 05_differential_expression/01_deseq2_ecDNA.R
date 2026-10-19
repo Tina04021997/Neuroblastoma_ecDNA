@@ -7,8 +7,10 @@ library("DESeq2")
 library(org.Hs.eg.db)
 
 # ── Load counts ───────────────────────────────────────────────────────────────
-GE <- read.delim("merged_counts.txt", row.names="Geneid")
-dim(GE)
+# 21-sample matrix from 08_merge_counts.sh step 5 (version-stripped Ensembl IDs).
+GE <- read.delim("counts_21lines.txt", row.names = "Geneid", check.names = FALSE)
+rownames(GE) <- sub("\\..*$", "", rownames(GE))          # defensive: strip any version suffix
+stopifnot(!any(duplicated(rownames(GE))), ncol(GE) == 21)
 
 # ── Load metadata ─────────────────────────────────────────────────────────────
 metadata <- read_csv("./heatmap_condition.csv")
@@ -32,18 +34,21 @@ res <- results(dds)
 summary(res)
 
 # ── Add gene symbols and export ───────────────────────────────────────────────
-res_df        <- as.data.frame(res)
-res_df$Symbol <- mapIds(org.Hs.eg.db,
-                        rownames(res_df),
-                        keytype = "ENSEMBL",
-                        column  = "SYMBOL")
+res_df         <- as.data.frame(res)
+res_df$Ensembl <- rownames(res_df)
+res_df$Symbol  <- mapIds(org.Hs.eg.db, res_df$Ensembl,
+                         keytype = "ENSEMBL", column = "SYMBOL", multiVals = "first")
 
-# Keep only genes with a symbol, remove duplicates
+n_mapped <- sum(!is.na(res_df$Symbol))
+message(sprintf("Symbol mapping: %d / %d genes", n_mapped, nrow(res_df)))
+stopifnot(n_mapped / nrow(res_df) > 0.5)                  # would be ~0 with versioned IDs
+
+# Duplicate symbols: keep the first occurrence in Ensembl-ID order (deterministic;
+# same rule as the original run). Report how many were dropped.
 res_df <- res_df[!is.na(res_df$Symbol), ]
+res_df <- res_df[order(res_df$Ensembl), ]
+n_dup  <- sum(duplicated(res_df$Symbol))
 res_df <- res_df[!duplicated(res_df$Symbol), ]
+message(sprintf("Dropped %d duplicate-symbol rows", n_dup))
 
-write.csv(res_df, file="deseq2_results_ecDNA.csv")
-
-print(paste("Total genes exported:", nrow(res_df)))
-print(paste("Significant (FDR < 0.05, |log2FC| > 1):",
-            sum(abs(res_df$log2FoldChange) > 1 & res_df$padj < 0.05, na.rm=TRUE)))
+write.csv(res_df, file = "deseq2_results_ecDNA.csv")   # Ensembl ID stays as row name (GSEA script reads column 1)
