@@ -14,7 +14,6 @@
 # Author: Tina Yang
 # Date: Feb 7, 2024
 # Process FeatureCounts
-# Run order: sections 1-3 below -> 08b_featurecounts_sanity_check.sh (creates reference_column.txt) -> section 4.
 
 # Set up envs
 mamba activate rna-seq
