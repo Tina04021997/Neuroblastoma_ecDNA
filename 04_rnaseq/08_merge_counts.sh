@@ -37,14 +37,17 @@ for file in $(cat $WORK_DIR/list.txt); do sed -i "s,$STAR_DIR/${file}/${file}_PA
 for file in $(cat $WORK_DIR/list.txt); do sed -i '1d' ${file}_counts.txt; done
 
 
-# 4. Concatenate all the individual files into one counts.txt
+# 4. Concatenate all the individual files into one counts.txt.
+#    Positional paste is only safe if every sample has the same gene IDs in the same order,
+#    so each file's ID column is compared to reference_column.txt first and the run aborts on any mismatch.
+[ -s reference_column.txt ] || { echo "ERROR: reference_column.txt missing; run 08b_featurecounts_sanity_check.sh first" >&2; exit 1; }
 cp reference_column.txt merged_counts.txt
 
-# Iterate over the samples
 for file in $(cat ../list.txt); do
-# Extract the second column from the current file and append it to the output file
-awk '{print $2}' ${file}_counts.txt | paste merged_counts.txt - > temp.txt
-mv temp.txt merged_counts.txt
+    cmp -s <(cut -f1 "${file}_counts.txt") reference_column.txt \
+        || { echo "ERROR: gene ID column of ${file}_counts.txt differs from reference_column.txt (order or content)" >&2; exit 1; }
+    paste merged_counts.txt <(cut -f2 "${file}_counts.txt") > temp.txt
+    mv temp.txt merged_counts.txt
 done
 
 # Remove the character after the decimal in geneid
