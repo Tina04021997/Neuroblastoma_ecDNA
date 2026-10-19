@@ -14,6 +14,6 @@ cut -d $'\t' --complement -f 2 ${SAMPLE}_counts.txt > reference_column.txt
 
 for file in *_counts.txt; do cut -d $'\t' --complement -f 2 $file > ${file%_counts.txt}_column.txt; done
 
-for file in *_column.txt; do diff -q "$file" reference_column.txt; done
+for file in *_column.txt; do diff -q "$file" reference_column.txt; done || { echo "mismatch: $file"; exit 1; })
 
 rm *_column.txt
