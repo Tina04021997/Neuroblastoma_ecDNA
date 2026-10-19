@@ -10,7 +10,7 @@ WORK_DIR=/path/to/rnaseq/featureCounts
 
 cd $WORK_DIR
 
-cut -d $'\t' --complement -f 2 ${SAMPLE}_counts.txt > reference_column.txt
+cut -f1 "${SAMPLE}_counts.txt" > reference_column.txt 
 
 status=0
 for file in *_counts.txt; do
