@@ -8,5 +8,5 @@
 # Usage: bash 02_filter_delly_vcf.sh sample_list.txt
 
 while read -r sample; do
-    awk '/^chr([1-9]|1[0-9]|2[0-2]|X)\s.*\sPASS\s/' ${sample}/${sample}.vcf > ${sample}_sv.txt
+    awk -F'\t' '$1 ~ /^chr([1-9]|1[0-9]|2[0-2]|X)$/ && $7=="PASS"' ${sample}/${sample}.vcf > ${sample}_sv.txt
 done < "$1"
