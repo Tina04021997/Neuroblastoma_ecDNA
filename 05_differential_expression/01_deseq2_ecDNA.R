@@ -1,5 +1,5 @@
 # ── Setup ─────────────────────────────────────────────────────────────────────
-setwd("/path/to/deseq2")   # folder containing merged_counts.txt and heatmap_condition.csv; outputs are written here
+setwd("/path/to/deseq2")   # folder containing counts_21lines.txt and heatmap_condition.csv; outputs are written here
 
 # ── Load packages ─────────────────────────────────────────────────────────────
 library("tidyverse")
