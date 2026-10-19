@@ -43,10 +43,8 @@ n_mapped <- sum(!is.na(res_df$Symbol))
 message(sprintf("Symbol mapping: %d / %d genes", n_mapped, nrow(res_df)))
 stopifnot(n_mapped / nrow(res_df) > 0.5)                  # would be ~0 with versioned IDs
 
-# Duplicate symbols: keep the first occurrence in Ensembl-ID order (deterministic;
-# same rule as the original run). Report how many were dropped.
+ # Duplicate symbols: keep the first occurrence in file (GTF) order — deterministic for a fixed annotation and identical to the original run. Report how many were dropped.
 res_df <- res_df[!is.na(res_df$Symbol), ]
-res_df <- res_df[order(res_df$Ensembl), ]
 n_dup  <- sum(duplicated(res_df$Symbol))
 res_df <- res_df[!duplicated(res_df$Symbol), ]
 message(sprintf("Dropped %d duplicate-symbol rows", n_dup))
