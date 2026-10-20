@@ -13,7 +13,7 @@ FONT_SCALE <- 1.9
 
 # ── Step 1: Build ranked gene list ────────────────────────────────────────────
 df <- read.csv(deseq2_path) %>%
-  rename(ensembl = 1) %>%
+  dplyr::rename(ensembl = 1)  %>%
   filter(!is.na(pvalue), !is.na(log2FoldChange), !is.na(Symbol)) %>%
   filter(!duplicated(Symbol)) %>%
   filter(pvalue < 1) %>%
