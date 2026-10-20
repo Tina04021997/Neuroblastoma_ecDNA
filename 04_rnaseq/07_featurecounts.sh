@@ -16,9 +16,9 @@ for file in $(cat ${WORK_DIR}/list.txt); do echo -e "#!/bin/bash
 
 #SBATCH -N 1
 #SBATCH -n 1
-#SBATCH -c 64
-#SBATCH -t 100:00:00
-#SBATCH --mem=100G
+#SBATCH -c 2
+#SBATCH -t 1:00:00
+#SBATCH --mem=30G
 #SBATCH -p <partition>
 #SBATCH -A <account>
 #SBATCH --job-name=${file}_featureCounts
@@ -30,7 +30,10 @@ for file in $(cat ${WORK_DIR}/list.txt); do echo -e "#!/bin/bash
 # FeatureCount
 
 # Set up envs
-mamba activate rna-seq
+source /tscc/nfs/home/tiy002/miniforge3/etc/profile.d/mamba.sh
+source ~/.bashrc
+source /tscc/nfs/home/tiy002/miniforge3/bin/activate
+conda activate rna-seq
 
 # Dataset
 OUT_DIR='${WORK_DIR}/featureCounts'
