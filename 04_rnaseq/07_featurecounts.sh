@@ -42,7 +42,7 @@ cd \"\$OUT_DIR\"
 featureCounts \\
 \"\$STAR_PATH/${file}/${file}_PASS2_resultAligned.sortedByCoord.out.bam\" \\
 -a \"\$ANNOTATION_PATH/gencode.v44.basic.annotation.gtf\" \\
--p \\
+-p --countReadPairs -B -C \\
 -o ${file}.featureCounts.txt \\
--T 64
+-T 2
 " > "${file}_featureCounts.sh"; done
