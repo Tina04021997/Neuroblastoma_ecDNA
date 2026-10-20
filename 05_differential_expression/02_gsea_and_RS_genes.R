@@ -3,17 +3,37 @@ library(fgsea)
 library(msigdbr)
 library(ggplot2)
 
+# dplyr verbs are written as dplyr::<verb>() where a Bioconductor package attached
+# earlier in the same session (DESeq2 -> S4Vectors, org.Hs.eg.db -> AnnotationDbi)
+# would otherwise mask them: `rename` and `select`. Running this script in a fresh
+# R session is still recommended.
+
 # ── Paths ──────────────────────────────────────────────────────────────────────
 deseq2_path <- '/path/to/deseq2/deseq2_results_ecDNA.csv'   # output of 01_deseq2_ecDNA.R
 out_dir     <- '/path/to/gsea'
+
+# ── Versions ──────────────────────────────────────────────────────────────────
+# Gene-set membership changes between MSigDB releases, so Hallmark results are tied
+# to the msigdbr version below. Original analysis: msigdbr 26.1.0 (MSigDB 2025.1.Hs),
+# fgsea 1.3x, R 4.x -- see README "Software versions" and the per-run log written here.
+stopifnot(packageVersion("msigdbr") >= "26.1.0")
+writeLines(c(
+  paste("R      ", R.version.string),
+  paste("fgsea  ", packageVersion("fgsea")),
+  paste("msigdbr", packageVersion("msigdbr")),
+  paste("dplyr  ", packageVersion("dplyr")),
+  paste("ggplot2", packageVersion("ggplot2")),
+  paste("run    ", format(Sys.time(), "%Y-%m-%d %H:%M"))
+), file.path(out_dir, "gsea_session_versions.txt"))
 
 # ── Figure text scaling ───────────────────────────────────────────────────────
 # Change only this value to enlarge or reduce all text in both figures.
 FONT_SCALE <- 1.9
 
 # ── Step 1: Build ranked gene list ────────────────────────────────────────────
+# Column 1 of the DESeq2 CSV is the unnamed row-name column (Ensembl ID).
 df <- read.csv(deseq2_path) %>%
-  dplyr::rename(ensembl = 1)  %>%
+  dplyr::rename(ensembl = 1) %>%
   filter(!is.na(pvalue), !is.na(log2FoldChange), !is.na(Symbol)) %>%
   filter(!duplicated(Symbol)) %>%
   filter(pvalue < 1) %>%
@@ -27,15 +47,17 @@ ranked <- setNames(df$rank, df$Symbol)
 cat("Genes in ranked list:", length(ranked), "\n")
 
 # ── Step 2: Get gene sets ──────────────────────────────────────────────────────
-hallmark <- msigdbr(species = "Homo sapiens", category = "H") %>%
+# `collection =` replaces the deprecated `category =` argument (msigdbr >= 10).
+hallmark <- msigdbr(species = "Homo sapiens", collection = "H") %>%
   split(x = .$gene_symbol, f = .$gs_name)
 
 cat("Hallmark gene sets:", length(hallmark), "\n")
 
 # ── Step 3: Run fgsea on Hallmark ─────────────────────────────────────────────
-set.seed(42)
-
-run_fgsea <- function(pathways, stats, label) {
+# fgseaMultilevel is stochastic; the seed is set inside the function so every call
+# is reproducible on its own (seed 42, as in the original run).
+run_fgsea <- function(pathways, stats, label, seed = 42) {
+  set.seed(seed)
   fgseaMultilevel(
     pathways = pathways,
     stats    = stats,
@@ -49,12 +71,15 @@ run_fgsea <- function(pathways, stats, label) {
 
 results_hallmark <- run_fgsea(hallmark, ranked, "Hallmark")
 
-write.csv(results_hallmark %>% select(-leadingEdge),
+write.csv(results_hallmark %>% dplyr::select(-leadingEdge),
           file.path(out_dir, "hallmark_GSEA_results.csv"), row.names = FALSE)
 
-cat("Hallmark:", nrow(results_hallmark), "pathways tested\n")
+cat("Hallmark:", nrow(results_hallmark), "pathways tested;",
+    sum(results_hallmark$padj < 0.05), "with FDR < 0.05\n")
 
-# ── Step 4: Hallmark dot plot — top 20 significant, no red labels ──────────────
+# ── Step 4: Hallmark dot plot — top 20 significant non-MYC sets ───────────────
+# MYC_TARGETS_V1/V2 are excluded from the plot (expected given MYCN amplification);
+# they remain in hallmark_GSEA_results.csv.
 results_hallmark <- results_hallmark %>%
   mutate(is_myc = grepl("MYC", pathway, ignore.case = TRUE))
 
@@ -115,7 +140,10 @@ ggsave(file.path(out_dir, "GSEA_hallmark_dotplot.pdf"),
        p_hallmark, width = 10, height = 8, dpi = 900)
 cat("Hallmark dot plot saved.\n")
 
-# ── Step 5: RS gene bar plot — expanded gene list ─────────────────────────────
+# ── Step 5: RS gene bar plot ──────────────────────────────────────────────────
+# Curated replication-stress (RS) gene panel used for Fig 2E (n = length(rs_genes)).
+# This is the only RS list in the repository; 03_export_CHEK1_FPKM.R reads the same
+# vector from rs_genes.txt so the two scripts cannot drift apart.
 rs_genes <- c(
   # ATR-CHK1 axis
   'ATR', 'ATRIP', 'TOPBP1', 'CHEK1', 'CLSPN', 'TIMELESS', 'TIPIN', 'RAD17', 'WEE1',
@@ -134,12 +162,15 @@ rs_genes <- c(
   # Fanconi anemia
   'FANCD2'
 )
+writeLines(rs_genes, file.path(out_dir, "rs_genes.txt"))
 
 rs_df <- df %>%
   filter(Symbol %in% rs_genes) %>%
   arrange(log2FoldChange) %>%
   mutate(
     Symbol    = factor(Symbol, levels = Symbol),
+    # Bar colour: exploratory threshold FDR < 0.2 (stated as such in the Fig 2E legend).
+    # Asterisks: conventional FDR < 0.05 / 0.01 / 0.001.
     sig_color = case_when(
       padj < 0.2 & log2FoldChange > 0 ~ "Higher in ecDNA+ (FDR<0.2)",
       padj < 0.2 & log2FoldChange < 0 ~ "Higher in ecDNA- (FDR<0.2)",
@@ -154,6 +185,8 @@ rs_df <- df %>%
 mean_fc <- mean(rs_df$log2FoldChange)
 cat(sprintf("Mean log2FC of RS genes: %.3f\n", mean_fc))
 cat(sprintf("RS genes found in DESeq2 results: %d / %d\n", nrow(rs_df), length(rs_genes)))
+cat(sprintf("RS genes with FDR < 0.05: %s\n",
+            paste(as.character(rs_df$Symbol[rs_df$padj < 0.05]), collapse = ", ")))
 
 # Report any RS genes missing from the DESeq2 results
 missing <- setdiff(rs_genes, rs_df$Symbol)
@@ -194,6 +227,9 @@ cat("RS gene plot saved.\n")
 cat("\n================================================\n")
 cat("OUTPUT FILES\n")
 cat("================================================\n")
-cat("hallmark_GSEA_results.csv\n")
-cat("GSEA_hallmark_dotplot.pdf    -- Hallmark top 20 significant, no red labels\n")
-cat("RS_genes_log2FC.pdf         -- RS gene bar plot (n=30), colored = FDR<0.2\n")
+cat("hallmark_GSEA_results.csv   -- all 50 Hallmark sets, fgsea statistics\n")
+cat("GSEA_hallmark_dotplot.pdf   -- top 20 significant non-MYC sets by |NES| (Fig 2D)\n")
+cat(sprintf("RS_genes_log2FC.pdf         -- RS gene bar plot (n=%d), colored = FDR<0.2 (Fig 2E)\n",
+            length(rs_genes)))
+cat("rs_genes.txt                -- the RS gene panel, one symbol per line\n")
+cat("gsea_session_versions.txt   -- R / fgsea / msigdbr / dplyr / ggplot2 versions for this run\n")
