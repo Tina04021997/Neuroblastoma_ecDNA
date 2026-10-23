@@ -75,7 +75,7 @@ Run the folders in numeric order.
 | SAMtools | 1.9 |
 | Picard | 3.0.0 |
 | AmpliconSuite-pipeline | 1.2.2 |
-| CNVkit | 0.9.10 |
+| CNVkit | 0.9.12 |
 | AmpliconArchitect | 1.4.0 |
 | AmpliconClassifier | 1.1.1 |
 | CycleViz | 0.2.2 |
