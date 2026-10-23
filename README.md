@@ -62,7 +62,6 @@ Run the folders in numeric order.
 - **Single-sample scripts:** these are shown for CHP134 and were run identically for every cell line.
 - **STAR 2-pass:** run samples one at a time. Each sample rebuilds a shared splice-junction index.
 - **Manual tables:**
-  - `master.csv` (Fig 1A), `FPKM_CN_MYCN.txt` (Fig 2A) and `MYCN_FPKM.txt` (Fig 2B) were assembled manually from the AmpliconClassifier, ShatterSeek and StringTie outputs.
   - The 21-sample count matrix was assembled by joining per-sample featureCounts columns on Ensembl gene ID.
 
 ## Software versions
