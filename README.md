@@ -73,7 +73,7 @@ Run the folders in numeric order.
 | Reference genome / annotation (RNA-seq) | GENCODE GRCh38 primary assembly, GENCODE v44 basic |
 | BWA-MEM | 0.7.17-r1188 |
 | SAMtools | 1.9 |
-| Picard | 2.18.27 |
+| Picard | 3.0.0 |
 | AmpliconSuite-pipeline | 1.2.2 |
 | CNVkit | 0.9.10 |
 | AmpliconArchitect | 1.4.0 |
