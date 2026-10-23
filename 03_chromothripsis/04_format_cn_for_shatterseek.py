@@ -14,7 +14,7 @@ for filename in os.listdir(input_directory):
         input_path = os.path.join(input_directory, filename)
         
         # Modify output file name
-        output_filename = filename.replace('.cs.rmdup_CNV_CALLS.bed', '_cn.txt')
+        output_filename = filename.replace('.mkdp_CNV_CALLS.bed', '_cn.txt')
         output_path = os.path.join(output_directory, output_filename)
         print(f"Processing {output_filename}")
 
