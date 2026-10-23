@@ -1,92 +1,87 @@
 #!/usr/bin/env python3
 """Extract the MYCN copy number used in Figs 1A/2A from AmpliconSuite output.
 
-For each sample listed in samples.tsv, in order of preference:
-  1. AmpliconClassifier <sample>_gene_list.tsv: gene_cn of MYCN (max over amplicons)  -> source "AC"
-     (= AmpliconArchitect's PredictedCopyCount of the MYCN-containing amplicon segment)
-  2. AmpliconArchitect <sample>_amplicon*_graph.txt: highest PredictedCopyCount among sequence
-     edges overlapping the MYCN locus                                                  -> source "AA"
-  3. No amplicon covers MYCN (MYCN non-amplified lines): the CNVkit segment overlapping MYCN
-     in <sample>.cs.rmdup_CNV_CALLS.bed (column 5), rounded to 1 decimal              -> source "CNVkit"
+Inputs (anywhere below --dir, searched recursively; a flat folder of copied files is fine):
+  <sample>_gene_list.tsv        AmpliconClassifier per-gene output   -> MYCN gene_cn (max over amplicons)
+  <sample>*_CNV_CALLS.bed       CNVkit calls (from PrepareAA)        -> CN of the segment overlapping MYCN,
+                                                                        used only when no amplicon covers MYCN
+Rule, checked against samples.tsv:
+  MYCN_amp == "amp"     -> must have a MYCN row in its gene list (source "AC"); otherwise the script fails
+  MYCN_amp == "no_amp"  -> CNVkit segment value, 1 decimal (source "CNVkit"); a MYCN gene-list row would be a
+                           warning (it would mean an amplicon covers MYCN in a line labelled non-amplified)
 
-Output: MYCN_CN.tsv  (sample_id, MYCN_CN, source, feature, segment)
+Output: MYCN_CN.tsv  (sample_id, MYCN_CN, source, feature, file)  — read by 06_figures/00_build_figure_tables.py --cn
 
 Usage:
-  python 03_extract_MYCN_CN.py --aa-dir /path/to/ecDNA_analysis --samples samples.tsv --out data/MYCN_CN.tsv
-AmpliconSuite writes one folder per sample under --aa-dir (01_run_ampliconsuite.sh); the graph files are
-<aa-dir>/<sample>/<sample>_amplicon<N>_graph.txt and the CNVkit calls <aa-dir>/<sample>/<sample>.cs.rmdup_CNV_CALLS.bed.
+  python 03_extract_MYCN_CN.py --dir /path/to/ac_files --samples samples.tsv --out data/MYCN_CN.tsv
+  (--dir may be repeated, e.g. one folder per sequencing batch)
 """
-import argparse, glob, os, re, sys
+import argparse, glob, os, sys
 
 MYCN = ("chr2", 15_940_550, 15_947_007)   # GENCODE v44 gene span, hg38
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--aa-dir", required=True)
+ap.add_argument("--dir", required=True, action="append", help="folder(s) holding the gene lists / CNV_CALLS beds")
 ap.add_argument("--samples", required=True)
 ap.add_argument("--out", required=True)
 a = ap.parse_args()
 
+def find(pattern):
+    hits = []
+    for root in a.dir:
+        hits += glob.glob(os.path.join(root, "**", pattern), recursive=True)
+    return sorted(set(hits))
+
 def overlaps(chrom, s, e):
     return chrom == MYCN[0] and s < MYCN[2] and e > MYCN[1]
 
-def aa_cn(sample):
-    best = None
-    for g in sorted(glob.glob(os.path.join(a.aa_dir, sample, f"{sample}_amplicon*_graph.txt"))):
-        for line in open(g):
-            if not line.startswith("sequence"):
-                continue
-            _, p1, p2, cn = line.rstrip("\n").split("\t")[:4]
-            c1, s = re.match(r"(chr\w+):(\d+)", p1).groups()
-            c2, e = re.match(r"(chr\w+):(\d+)", p2).groups()
-            if c1 == c2 and overlaps(c1, int(s), int(e)):
-                cand = (float(cn), f"{os.path.basename(g)}:{c1}:{s}-{e}")
-                if best is None or cand[0] > best[0]:
-                    best = cand
-    return best
-
 def ac_cn(sample):
+    """(gene_cn, feature, file) for MYCN, max over amplicons; None if no gene list or no MYCN row"""
     best = None
-    for gl in glob.glob(os.path.join(a.aa_dir, sample, "**", f"{sample}_gene_list.tsv"), recursive=True):
+    for gl in find(f"{sample}_gene_list.tsv"):
         for line in open(gl):
             f = line.rstrip("\n").split("\t")
             if len(f) >= 5 and f[3] == "MYCN":
-                cand = (float(f[4]), f[2], f"{os.path.basename(gl)}:{f[1]}")
+                cand = (float(f[4]), f[2], f"{os.path.basename(gl)} ({f[1]})")
                 if best is None or cand[0] > best[0]:
                     best = cand
     return best
 
 def cnvkit_cn(sample):
-    beds = glob.glob(os.path.join(a.aa_dir, sample, f"{sample}*_CNV_CALLS.bed"))
-    beds = [b for b in beds if "pre_filtered" not in b] or beds
+    beds = [b for b in find(f"{sample}*_CNV_CALLS.bed") if "pre_filtered" not in b] or find(f"{sample}*_CNV_CALLS.bed")
     for b in beds:
         for line in open(b):
             f = line.rstrip("\n").split("\t")
             if len(f) >= 5 and overlaps(f[0], int(f[1]), int(f[2])):
-                return (round(float(f[4]), 1), f"{os.path.basename(b)}:{f[0]}:{f[1]}-{f[2]}")
+                return (round(float(f[4]), 1), f"{os.path.basename(b)} {f[0]}:{f[1]}-{f[2]}")
     return None
 
-samples = [l.split("\t")[0] for l in open(a.samples).read().splitlines()[1:] if l.strip()]
-rows, missing = [], []
-for s in samples:
-    r = ac_cn(s)
-    if r is not None:
-        cn, feat, seg, src = round(r[0]), r[1], r[2], "AC"
+# samples.tsv: sample_id in column 1, MYCN_amp somewhere in the header
+hdr, *lines = [l.split("\t") for l in open(a.samples).read().splitlines() if l.strip()]
+i_amp = hdr.index("MYCN_amp")
+samples = [(l[0], l[i_amp]) for l in lines]
+
+rows, errors = [], []
+for s, amp in samples:
+    ac = ac_cn(s)
+    if amp == "amp":
+        if ac is None:
+            errors.append(f"{s}: MYCN-amplified but no MYCN row in any {s}_gene_list.tsv under --dir"); continue
+        rows.append((s, round(ac[0]), "AC", ac[1], ac[2]))
     else:
-        r = aa_cn(s)
-        if r is not None:
-            cn, feat, seg, src = round(r[0]), "amplicon", r[1], "AA"
-        else:
-            r = cnvkit_cn(s)
-            if r is None:
-                missing.append(s); continue
-            cn, feat, seg, src = r[0], "none", r[1], "CNVkit"
-    rows.append((s, cn, src, feat, seg))
+        if ac is not None:
+            print(f"WARNING: {s} is labelled no_amp but its gene list has MYCN (gene_cn {ac[0]:.1f}, {ac[1]}); "
+                  f"using CNVkit value as labelled", file=sys.stderr)
+        ck = cnvkit_cn(s)
+        if ck is None:
+            errors.append(f"{s}: non-amplified but no {s}*_CNV_CALLS.bed with a segment overlapping MYCN under --dir"); continue
+        rows.append((s, ck[0], "CNVkit", "none", ck[1]))
 
 with open(a.out, "w") as fh:
-    fh.write("sample_id\tMYCN_CN\tsource\tfeature\tsegment\n")
-    for s, cn, src, feat, seg in rows:
-        fh.write(f"{s}\t{cn:g}\t{src}\t{feat}\t{seg}\n")
-        print(f"{s}\t{cn:g}\t{src}\t{feat}\t{seg}")
-if missing:
-    print("ERROR: no MYCN copy number found for:", ", ".join(missing), file=sys.stderr); sys.exit(1)
+    fh.write("sample_id\tMYCN_CN\tsource\tfeature\tfile\n")
+    for r in rows:
+        fh.write("\t".join([r[0], f"{r[1]:g}", r[2], r[3], r[4]]) + "\n")
+        print("\t".join([r[0], f"{r[1]:g}", r[2], r[3], r[4]]))
+if errors:
+    print("\n".join("ERROR: " + e for e in errors), file=sys.stderr); sys.exit(1)
 print(f"wrote {a.out} ({len(rows)} lines)")
