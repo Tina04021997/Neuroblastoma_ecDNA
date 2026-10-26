@@ -1,17 +1,17 @@
 #Amplicons = 1
 -----------------------------------------------------------------------------------------
 [amplicon1] AmpliconID = 1
-[amplicon1] #Intervals = 2
-[amplicon1] Intervals = chr2:11500087-12860098,chr2:15480117-16195124
-[amplicon1] OncogenesAmplified = TRIB2,MYCN,
-[amplicon1] TotalIntervalSize = 2075020
-[amplicon1] AmplifiedIntervalSize = 1692859
-[amplicon1] AverageAmplifiedCopyCount = 104.90694981736712
+[amplicon1] #Intervals = 4
+[amplicon1] Intervals = chr2:11450087-12860097,chr2:14920617-14921804,chr2:15480118-16175123,chr2:59853046-59854233
+[amplicon1] OncogenesAmplified = MYCN,TRIB2,
+[amplicon1] TotalIntervalSize = 2107393
+[amplicon1] AmplifiedIntervalSize = 1693569
+[amplicon1] AverageAmplifiedCopyCount = 104.67077478610722
 [amplicon1] #Chromosomes = 1
-[amplicon1] #SeqenceEdges = 15
-[amplicon1] #BreakpointEdges = 5
-[amplicon1] #CoverageShifts = 5
-[amplicon1] #MeanshiftSegmentsCopyCount>5 = 2
-[amplicon1] #Foldbacks = 5
-[amplicon1] #CoverageShiftsWithBreakpointEdges = 1
+[amplicon1] #SeqenceEdges = 23
+[amplicon1] #BreakpointEdges = 8
+[amplicon1] #CoverageShifts = 7
+[amplicon1] #MeanshiftSegmentsCopyCount>5 = 3
+[amplicon1] #Foldbacks = 7
+[amplicon1] #CoverageShiftsWithBreakpointEdges = 3
 [amplicon1] -----------------------------------------------------------------------------------------
