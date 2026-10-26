@@ -13,8 +13,9 @@ Rule, checked against samples.tsv:
 Output: MYCN_CN.tsv  (sample_id, MYCN_CN, source, feature, file)  — read by 06_figures/00_build_figure_tables.py --cn
 
 Usage:
-  python 03_extract_MYCN_CN.py --dir /path/to/ac_files --samples samples.tsv --out data/MYCN_CN.tsv
-  (--dir may be repeated, e.g. one folder per sequencing batch)
+  python 03_extract_MYCN_CN.py --dir /path/to/ac_files --samples samples.tsv --id-column dna_id --out data/MYCN_CN.tsv
+  (--dir may be repeated; --id-column names the samples.tsv column matching the AmpliconSuite file names,
+   because three lines carry different IDs in the WGS data: NB10=NBro, SKNBE2=SKNEB2, SKNrI=SKNYrI)
 """
 import argparse, glob, os, sys
 
@@ -24,6 +25,8 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--dir", required=True, action="append", help="folder(s) holding the gene lists / CNV_CALLS beds")
 ap.add_argument("--samples", required=True)
 ap.add_argument("--out", required=True)
+ap.add_argument("--id-column", default="sample_id",
+                help="samples.tsv column holding the name used in the AmpliconSuite file names (e.g. dna_id)")
 a = ap.parse_args()
 
 def find(pattern):
@@ -58,23 +61,23 @@ def cnvkit_cn(sample):
 
 # samples.tsv: sample_id in column 1, MYCN_amp somewhere in the header
 hdr, *lines = [l.split("\t") for l in open(a.samples).read().splitlines() if l.strip()]
-i_amp = hdr.index("MYCN_amp")
-samples = [(l[0], l[i_amp]) for l in lines]
+i_amp = hdr.index("MYCN_amp"); i_id = hdr.index(a.id_column)
+samples = [(l[0], l[i_id], l[i_amp]) for l in lines]   # (sample_id, file-name id, amp)
 
 rows, errors = [], []
-for s, amp in samples:
-    ac = ac_cn(s)
+for s, fid, amp in samples:
+    ac = ac_cn(fid)
     if amp == "amp":
         if ac is None:
-            errors.append(f"{s}: MYCN-amplified but no MYCN row in any {s}_gene_list.tsv under --dir"); continue
+            errors.append(f"{s}: MYCN-amplified but no MYCN row in any {fid}_gene_list.tsv under --dir"); continue
         rows.append((s, round(ac[0]), "AC", ac[1], ac[2]))
     else:
         if ac is not None:
             print(f"WARNING: {s} is labelled no_amp but its gene list has MYCN (gene_cn {ac[0]:.1f}, {ac[1]}); "
                   f"using CNVkit value as labelled", file=sys.stderr)
-        ck = cnvkit_cn(s)
+        ck = cnvkit_cn(fid)
         if ck is None:
-            errors.append(f"{s}: non-amplified but no {s}*_CNV_CALLS.bed with a segment overlapping MYCN under --dir"); continue
+            errors.append(f"{s}: non-amplified but no {fid}*_CNV_CALLS.bed with a segment overlapping MYCN under --dir"); continue
         rows.append((s, ck[0], "CNVkit", "none", ck[1]))
 
 with open(a.out, "w") as fh:
