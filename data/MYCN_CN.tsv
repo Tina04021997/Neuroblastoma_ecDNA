@@ -1,0 +1,22 @@
+sample_id	MYCN_CN	source	feature	file
+CHP134	276	AC	ecDNA_1	CHP134_gene_list.tsv (amplicon1)
+CHP212	104	AC	ecDNA_1	CHP212_gene_list.tsv (amplicon1)
+IMR32	268	AC	ecDNA_1	IMR32_gene_list.tsv (amplicon1)
+Kelly	505	AC	ecDNA_1	Kelly_gene_list.tsv (amplicon1)
+LAN6	2.9	CNVkit	none	LAN6_tumor_mkdp_CNV_CALLS.bed chr2:13770104-16690126
+NBLS	3	CNVkit	none	NBLS_tumor_mkdp_CNV_CALLS.bed chr2:14655111-16785127
+NGP	285	AC	ecDNA_1	NGP_gene_list.tsv (amplicon1)
+SKNAS	1.9	CNVkit	none	SKNAS_tumor_mkdp_CNV_CALLS.bed chr2:13760104-16575125
+SKNSH	2.9	CNVkit	none	SKNSH_tumor_mkdp_CNV_CALLS.bed chr2:13265100-16110122
+TR14	403	AC	ecDNA_2	TR14_gene_list.tsv (amplicon1)
+KAN	447	AC	ecDNA_1	KAN_gene_list.tsv (amplicon1)
+KCNR	168	AC	ecDNA_1	KCNR_gene_list.tsv (amplicon1)
+KANR	109	AC	ecDNA_1	KANR_gene_list.tsv (amplicon1)
+KPNYN	255	AC	ecDNA_1	KPNYN_gene_list.tsv (amplicon1)
+LAN1	124	AC	ecDNA_1	LAN1_gene_list.tsv (amplicon2)
+LANS	137	AC	ecDNA_1	LANS_gene_list.tsv (amplicon1)
+NB10	17	AC	ecDNA_1	NBro_gene_list.tsv (amplicon1)
+NB1643	495	AC	ecDNA_1	NB1643_gene_list.tsv (amplicon1)
+NB69	2.7	CNVkit	none	NB69_mkdp_CNV_CALLS.bed chr2:14260108-16455125
+SKNBE2	412	AC	ecDNA_1	SKNEB2_gene_list.tsv (amplicon1)
+SKNrI	2.2	CNVkit	none	SKNYrI_mkdp_CNV_CALLS.bed chr2:10000-90342647

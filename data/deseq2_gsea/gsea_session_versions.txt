@@ -1,0 +1,6 @@
+R       R version 4.2.2 (2022-10-31)
+fgsea   1.22.0
+msigdbr 26.1.0
+dplyr   1.2.0
+ggplot2 4.0.2
+run     2026-10-19 18:20
