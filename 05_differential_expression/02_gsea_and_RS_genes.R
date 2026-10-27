@@ -14,8 +14,8 @@ out_dir     <- '/path/to/gsea'
 
 # ── Versions ──────────────────────────────────────────────────────────────────
 # Gene-set membership changes between MSigDB releases, so Hallmark results are tied
-# to the msigdbr version below. Original analysis: msigdbr 26.1.0 (MSigDB 2025.1.Hs),
-# fgsea 1.3x, R 4.x -- see README "Software versions" and the per-run log written here.
+# to the msigdbr version below. Original analysis: msigdbr 26.1.0 (MSigDB 2026.1.Hs),
+# fgsea 1.22.0, R 4.2.2 -- see README "Software versions" and the per-run log written here.
 stopifnot(packageVersion("msigdbr") >= "26.1.0")
 writeLines(c(
   paste("R      ", R.version.string),

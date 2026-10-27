@@ -1,5 +1,8 @@
 # ── Setup ─────────────────────────────────────────────────────────────────────
-setwd("/path/to/deseq2")   # folder containing counts_21lines.txt and heatmap_condition.csv; outputs are written here
+# DESeq2 1.36.0 (R 4.2.2): ecDNA+ (MYCN amp, n = 15) vs ecDNA- (MYCN non-amp, n = 6), design ~ MYCN_amp,
+# reference level no_amp, default Wald test / BH FDR. Sample groups come from samples.tsv (audit point 8).
+setwd("/path/to/deseq2")                         # folder containing counts_21lines.txt; outputs are written here
+SAMPLES_TSV <- "/path/to/repo/samples.tsv"       # repository sample sheet: sample_id, MYCN_amp (amp / no_amp), ...
 
 # ── Load packages ─────────────────────────────────────────────────────────────
 library("tidyverse")
@@ -12,21 +15,24 @@ GE <- read.delim("counts_21lines.txt", row.names = "Geneid", check.names = FALSE
 rownames(GE) <- sub("\\..*$", "", rownames(GE))          # defensive: strip any version suffix
 stopifnot(!any(duplicated(rownames(GE))), ncol(GE) == 21)
 
-# ── Load metadata ─────────────────────────────────────────────────────────────
-metadata <- read_csv("./heatmap_condition.csv")
-metadata <- as.data.frame(metadata)
-
-# Sanity check — column order must match metadata order
-stopifnot(all(colnames(GE) == metadata$Sample))
+# ── Load metadata from samples.tsv ────────────────────────────────────────────
+samples  <- read.delim(SAMPLES_TSV, stringsAsFactors = FALSE)
+stopifnot(all(c("sample_id", "MYCN_amp") %in% colnames(samples)), nrow(samples) == 21)
+metadata <- samples[match(colnames(GE), samples$sample_id), c("sample_id", "MYCN_amp", "ecDNA_group", "rna_batch")]
+stopifnot(!any(is.na(metadata$sample_id)))                 # every count column must be in samples.tsv
+stopifnot(all(metadata$MYCN_amp %in% c("amp", "no_amp")))
+rownames(metadata) <- metadata$sample_id
+metadata$MYCN_amp  <- factor(metadata$MYCN_amp, levels = c("no_amp", "amp"))
+message(sprintf("groups: amp = %d, no_amp = %d", sum(metadata$MYCN_amp == "amp"), sum(metadata$MYCN_amp == "no_amp")))
+stopifnot(all(colnames(GE) == rownames(metadata)))
 
 # ── Build DESeqDataSet ────────────────────────────────────────────────────────
 dds <- DESeqDataSetFromMatrix(countData = GE,
                               colData   = metadata,
                               design    = ~MYCN_amp)
 
-# Set reference level: no_amp = ecDNA− (denominator)
-# log2FC > 0 means higher in ecDNA+ (amp)
-dds$MYCN_amp <- relevel(dds$MYCN_amp, ref="no_amp")
+# Reference level: no_amp = ecDNA− (denominator); log2FC > 0 means higher in ecDNA+ (amp)
+dds$MYCN_amp <- relevel(dds$MYCN_amp, ref = "no_amp")
 
 # ── Run DESeq2 ────────────────────────────────────────────────────────────────
 dds <- DESeq(dds)
@@ -50,3 +56,6 @@ res_df <- res_df[!duplicated(res_df$Symbol), ]
 message(sprintf("Dropped %d duplicate-symbol rows", n_dup))
 
 write.csv(res_df, file = "deseq2_results_ecDNA.csv")   # Ensembl ID stays as row name (GSEA script reads column 1)
+
+# ── Session record ────────────────────────────────────────────────────────────
+writeLines(capture.output(sessionInfo()), "deseq2_sessionInfo.txt")
