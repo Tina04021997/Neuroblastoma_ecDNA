@@ -48,8 +48,15 @@ cat("Genes in ranked list:", length(ranked), "\n")
 
 # ── Step 2: Get gene sets ──────────────────────────────────────────────────────
 # `collection =` replaces the deprecated `category =` argument (msigdbr >= 10).
-hallmark <- msigdbr(species = "Homo sapiens", collection = "H") %>%
-  split(x = .$gene_symbol, f = .$gs_name)
+hallmark_tbl <- msigdbr(species = "Homo sapiens", collection = "H") %>%
+  dplyr::select(gs_name, gene_symbol, ensembl_gene) %>% dplyr::distinct() %>% dplyr::arrange(gs_name, gene_symbol)
+# Archive the exact gene-set membership used (audit point 7): one row per set x gene, msigdbr release in the file name,
+# so the analysis can be reproduced from this file even after MSigDB / msigdbr are updated.
+msig_file <- file.path(out_dir, sprintf("hallmark_genesets_msigdbr_%s.tsv", packageVersion("msigdbr")))
+write.table(hallmark_tbl, msig_file, sep = "\t", quote = FALSE, row.names = FALSE)
+cat("Hallmark gene-set membership written to", msig_file, "\n")
+hallmark <- split(x = hallmark_tbl$gene_symbol, f = hallmark_tbl$gs_name)
+stopifnot(length(hallmark) == 50)
 
 cat("Hallmark gene sets:", length(hallmark), "\n")
 
@@ -233,3 +240,4 @@ cat(sprintf("RS_genes_log2FC.pdf         -- RS gene bar plot (n=%d), colored = F
             length(rs_genes)))
 cat("rs_genes.txt                -- the RS gene panel, one symbol per line\n")
 cat("gsea_session_versions.txt   -- R / fgsea / msigdbr / dplyr / ggplot2 versions for this run\n")
+cat("hallmark_genesets_msigdbr_<ver>.tsv -- Hallmark gene-set membership (gs_name, gene_symbol, ensembl_gene) used in this run\n")
