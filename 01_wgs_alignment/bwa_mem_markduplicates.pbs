@@ -4,36 +4,39 @@
 #PBS -l nodes=1:ppn=28
 #PBS -l walltime=500:00:00
 #PBS -V
-#PBS -N EVC_Talign_CHP134
-#PBS -o CHP134_Talign.o
-#PBS -e CHP134_Talign.e
+#PBS -N WGS_align
+#PBS -o logs/align.o
+#PBS -e logs/align.e
 
-# WGS alignment + duplicate marking (shown for CHP134; run identically for every cell line).
+# WGS alignment + duplicate marking for one cell line.
+# Submit per sample:   qsub -v SAMPLE=CHP134 -N align_CHP134 bwa_mem_markduplicates.pbs
+# BWA-MEM 0.7.17-r1188, SAMtools 1.9, Picard 2.18.27 (conda env evc_main).
 
-# ── Paths: edit before running ───────────────────────────────────────────────
-SAMPLE=CHP134
-CONDA_BASE=/path/to/conda                                
-REF_FASTA=/path/to/references/GRCh38.d1.vd1/GRCh38.d1.vd1.fa
-FASTQ_DIR=/path/to/wgs/fastq                              
-WORK_DIR=/path/to/wgs/alignment                         
-TMP_DIR=/path/to/tmp                                  
-# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+source "${PBS_O_WORKDIR:-$(dirname "${BASH_SOURCE[0]}")}/../config.sh"
+SAMPLE="${SAMPLE:?usage: qsub -v SAMPLE=<id> $0}"
 
-source ${CONDA_BASE}/etc/profile.d/conda.sh
-conda activate evc_main
-echo === Starting alignment on sample ${SAMPLE} at $(date)===
->&2 echo "=== Starting alignment on sample ${SAMPLE} at $(date)=== "
-cd ${WORK_DIR}
-mkdir -p ${SAMPLE}
-cd ${SAMPLE}
-echo starting aligning tumor at $(date)
+activate_env evc_main
+require_file "${WGS_REF_FASTA}" \
+             "${WGS_FASTQ_DIR}/${SAMPLE}_1.fastq.gz" "${WGS_FASTQ_DIR}/${SAMPLE}_2.fastq.gz"
+
+echo "=== Starting alignment on sample ${SAMPLE} at $(date) ==="
+mkdir -p "${WGS_ALIGN_DIR}/${SAMPLE}" "${TMP_DIR}"
+cd "${WGS_ALIGN_DIR}/${SAMPLE}"
+log_version "bwa 2>&1 | head -4; samtools --version | head -1; picard MarkDuplicates --version" "${SAMPLE}.versions.txt"
+
 alignS=$SECONDS
-bwa mem -T 0 -t $(nproc) -R "@RG\tID:${SAMPLE}\tSM:${SAMPLE}_tumor\tPL:ILLUMINA" ${REF_FASTA} ${FASTQ_DIR}/${SAMPLE}_1.fastq.gz ${FASTQ_DIR}/${SAMPLE}_2.fastq.gz | samtools view -bh --input-fmt-option nthreads=$(nproc) | samtools sort -@ $(nproc) > ${SAMPLE}_tumor_raw.bam
-alignT=$(($SECONDS - $alignS))
-echo alignment took $(echo a|awk '{print '"$alignT"'/3600}') hours
-echo starting markDuplicates tumor at $(date)
+bwa mem -T 0 -t "$(nproc)" -R "@RG\tID:${SAMPLE}\tSM:${SAMPLE}_tumor\tPL:ILLUMINA" \
+    "${WGS_REF_FASTA}" "${WGS_FASTQ_DIR}/${SAMPLE}_1.fastq.gz" "${WGS_FASTQ_DIR}/${SAMPLE}_2.fastq.gz" \
+  | samtools view -bh --input-fmt-option nthreads="$(nproc)" \
+  | samtools sort -@ "$(nproc)" -o "${SAMPLE}_tumor_raw.bam"
+echo "alignment took $(( (SECONDS - alignS) / 60 )) min"
+
 mkdpS=$SECONDS
-picard MarkDuplicates ASSUME_SORT_ORDER=coordinate MAX_FILE_HANDLES=4000 CREATE_INDEX=true -Djava.io.tmpdir=${TMP_DIR} -XX:ParallelGCThreads=$(nproc) -Xmx4g VALIDATION_STRINGENCY=STRICT I=${SAMPLE}_tumor_raw.bam O=${SAMPLE}_tumor_mkdp.bam M=${SAMPLE}_tumor_markDuplicates_Matrix.txt
-mkdpT=$(($SECONDS - $mkdpS))
-echo markduplicate took $(echo a|awk '{print '"$mkdpT"'/3600}') hours
-echo job ends at $(date)
+picard MarkDuplicates ASSUME_SORT_ORDER=coordinate MAX_FILE_HANDLES=4000 CREATE_INDEX=true \
+    -Djava.io.tmpdir="${TMP_DIR}" -XX:ParallelGCThreads="$(nproc)" -Xmx4g VALIDATION_STRINGENCY=STRICT \
+    I="${SAMPLE}_tumor_raw.bam" O="${SAMPLE}_tumor_mkdp.bam" M="${SAMPLE}_tumor_markDuplicates_Matrix.txt"
+echo "markDuplicates took $(( (SECONDS - mkdpS) / 60 )) min"
+
+require_file "${SAMPLE}_tumor_mkdp.bam" "${SAMPLE}_tumor_mkdp.bai"
+echo "=== job ends at $(date) ==="
