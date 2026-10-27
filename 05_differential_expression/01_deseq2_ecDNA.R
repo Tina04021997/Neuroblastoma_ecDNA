@@ -17,13 +17,19 @@ stopifnot(!any(duplicated(rownames(GE))), ncol(GE) == 21)
 
 # ── Load metadata from samples.tsv ────────────────────────────────────────────
 samples  <- read.delim(SAMPLES_TSV, stringsAsFactors = FALSE)
-stopifnot(all(c("sample_id", "MYCN_amp") %in% colnames(samples)), nrow(samples) == 21)
+stopifnot(all(c("sample_id", "MYCN_amp", "ecDNA_group") %in% colnames(samples)), nrow(samples) == 21)
 metadata <- samples[match(colnames(GE), samples$sample_id), c("sample_id", "MYCN_amp", "ecDNA_group", "rna_batch")]
 stopifnot(!any(is.na(metadata$sample_id)))                 # every count column must be in samples.tsv
 stopifnot(all(metadata$MYCN_amp %in% c("amp", "no_amp")))
+stopifnot(all(metadata$ecDNA_group %in% c("ecDNA+", "ecDNA-")))
 rownames(metadata) <- metadata$sample_id
 metadata$MYCN_amp  <- factor(metadata$MYCN_amp, levels = c("no_amp", "amp"))
-message(sprintf("groups: amp = %d, no_amp = %d", sum(metadata$MYCN_amp == "amp"), sum(metadata$MYCN_amp == "no_amp")))
+# Group definition (audit point 8): the design uses MYCN_amp, the Methods describe ecDNA+ vs ecDNA-. In this 21-line
+# cohort the two labels coincide (every MYCN-amplified line carries MYCN on ecDNA), so the contrast is the same.
+# Both facts are asserted here rather than assumed.
+stopifnot(identical(as.integer(table(metadata$MYCN_amp)), c(6L, 15L)))                   # no_amp = 6, amp = 15
+stopifnot(all((metadata$MYCN_amp == "amp") == (metadata$ecDNA_group == "ecDNA+")))     # MYCN_amp == ecDNA_group
+message(sprintf("groups: amp/ecDNA+ = %d, no_amp/ecDNA- = %d", sum(metadata$MYCN_amp == "amp"), sum(metadata$MYCN_amp == "no_amp")))
 stopifnot(all(colnames(GE) == rownames(metadata)))
 
 # ── Build DESeqDataSet ────────────────────────────────────────────────────────
