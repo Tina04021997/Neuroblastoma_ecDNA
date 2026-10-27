@@ -2,7 +2,7 @@
 # ============================================================
 # Export StringTie FPKM tables used by the figures
 # ============================================================
-# Reads <sample>.gene.abundance.txt (StringTie -A output, 06_stringtie.sh) for the
+# Reads <sample>.gene.abundance.txt (StringTie -A output, 04_rnaseq/06_stringtie_batch{1,2}.sh) for the
 # 21 lines listed in samples.tsv and writes:
 #   MYCN_FPKM.txt        Sample / MYCN / MYCN_amp          -> 06_figures/fig2B_MYCN_FPKM_boxplot.py
 #   MYCN_CHEK1_FPKM.csv  Sample / ecDNA_group / MYCN / CHEK1 -> MYCN_FPKM and CHEK1_FPKM columns of
@@ -24,9 +24,9 @@ suppressPackageStartupMessages({
 })
 
 # ── Paths: edit before running ───────────────────────────────────────────────
-STRINGTIE_DIR <- "/Users/tingyang/Desktop/LAB/Curebound/Pilot_Second/RS"          # folder containing <sample>.gene.abundance.txt
-SAMPLES_TSV   <- "/Users/tingyang/Desktop/LAB/Curebound/Pilot_Second/FPKM_2026_rerun/samples.tsv"
-RS_GENES_TXT  <- "/Users/tingyang/Desktop/LAB/Curebound/Pilot_Second/GSEA/2026_rerun/rs_genes.txt"  # written by 02_gsea_and_RS_genes.R
+STRINGTIE_DIR <- "/path/to/stringtie_output"       # folder containing <sample>.gene.abundance.txt ($STRINGTIE_DIR in config.sh)
+SAMPLES_TSV   <- "/path/to/repo/samples.tsv"       # repository sample sheet (sample_id, MYCN_amp, ecDNA_group)
+RS_GENES_TXT  <- "/path/to/repo/data/deseq2_gsea/rs_genes.txt"   # written by 02_gsea_and_RS_genes.R
 OUT_DIR       <- STRINGTIE_DIR
 DRAW_HEATMAP  <- TRUE
 # ─────────────────────────────────────────────────────────────────────────────
