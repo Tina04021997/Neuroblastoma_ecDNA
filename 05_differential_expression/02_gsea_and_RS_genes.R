@@ -149,7 +149,7 @@ cat("Hallmark dot plot saved.\n")
 
 # ── Step 5: RS gene bar plot ──────────────────────────────────────────────────
 # Curated replication-stress (RS) gene panel used for Fig 2E (n = length(rs_genes)).
-# This is the only RS list in the repository; 03_export_CHEK1_FPKM.R reads the same
+# This is the only RS list in the repository; 03_export_FPKM_tables.R reads the same
 # vector from rs_genes.txt so the two scripts cannot drift apart.
 rs_genes <- c(
   # ATR-CHK1 axis
@@ -169,6 +169,9 @@ rs_genes <- c(
   # Fanconi anemia
   'FANCD2'
 )
+# Audit point 9: the panel is exactly 29 unique symbols (manuscript Methods / Fig 2E legend); stop otherwise.
+RS_PANEL_SIZE <- 29L
+stopifnot(!anyDuplicated(rs_genes), length(unique(rs_genes)) == RS_PANEL_SIZE)
 writeLines(rs_genes, file.path(out_dir, "rs_genes.txt"))
 
 rs_df <- df %>%
@@ -176,8 +179,10 @@ rs_df <- df %>%
   arrange(log2FoldChange) %>%
   mutate(
     Symbol    = factor(Symbol, levels = Symbol),
-    # Bar colour: exploratory threshold FDR < 0.2 (stated as such in the Fig 2E legend).
-    # Asterisks: conventional FDR < 0.05 / 0.01 / 0.001.
+    # Bar colour (audit point 10): a deliberately lenient, exploratory threshold (FDR < 0.2) chosen to show the
+    # direction of change across the whole panel; it does not denote significance. Conventional significance is
+    # shown separately by asterisks (FDR < 0.05 / 0.01 / 0.001). Both encodings are described in the Methods and
+    # the Fig 2E legend (manuscript v11).
     sig_color = case_when(
       padj < 0.2 & log2FoldChange > 0 ~ "Higher in ecDNA+ (FDR<0.2)",
       padj < 0.2 & log2FoldChange < 0 ~ "Higher in ecDNA- (FDR<0.2)",
@@ -195,11 +200,12 @@ cat(sprintf("RS genes found in DESeq2 results: %d / %d\n", nrow(rs_df), length(r
 cat(sprintf("RS genes with FDR < 0.05: %s\n",
             paste(as.character(rs_df$Symbol[rs_df$padj < 0.05]), collapse = ", ")))
 
-# Report any RS genes missing from the DESeq2 results
-missing <- setdiff(rs_genes, rs_df$Symbol)
+# Every panel gene must be present in the DESeq2 results (Fig 2E shows all 29 bars); stop otherwise
+missing <- setdiff(rs_genes, as.character(rs_df$Symbol))
 if (length(missing) > 0) {
   cat("RS genes not found in DESeq2 results:", paste(missing, collapse = ", "), "\n")
 }
+stopifnot(length(missing) == 0, nrow(rs_df) == RS_PANEL_SIZE)
 
 p_rs <- ggplot(rs_df, aes(x = log2FoldChange, y = Symbol, fill = sig_color)) +
   geom_vline(xintercept = 0, linetype = "dashed", color = "grey70", linewidth = 0.5) +

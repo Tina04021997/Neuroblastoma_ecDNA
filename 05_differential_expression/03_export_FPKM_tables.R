@@ -104,6 +104,7 @@ cat(sprintf("\nMYCN FPKM  ecDNA+: median %.1f (range %.1f-%.1f) | ecDNA-: median
 if (DRAW_HEATMAP) {
   rs_genes <- readLines(RS_GENES_TXT)
   rs_genes <- rs_genes[nzchar(rs_genes)]
+  stopifnot(!anyDuplicated(rs_genes), length(unique(rs_genes)) == 29L)   # audit point 9
   message(sprintf("RS panel: %d genes from %s", length(rs_genes), RS_GENES_TXT))
 
   rs_data <- all_data |>
