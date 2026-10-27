@@ -39,6 +39,11 @@ Every number plotted in Figures 1A, 2A and 2B therefore traces to a file written
 │   ├── MYCN_CHEK1_FPKM.csv, CHEK1_FPKM.csv   # 05_differential_expression/03_export_FPKM_tables.R
 │   ├── MYCN_FPKM.txt, FPKM_CN_MYCN.txt, master.csv   # 06_figures/00_build_figure_tables.py
 │   └── ecDNA_summary/<sample>_summary.txt   # AmpliconArchitect summaries (final runs); read by fig1A_oncoprint.ipynb
+│   ├── deseq2_gsea/                     # frozen DE/GSEA outputs: counts_21lines.txt, deseq2_results_ecDNA.csv,
+│   │                                    #   hallmark_GSEA_results.csv, rs_genes.txt, gsea_session_versions.txt,
+│   │                                    #   hallmark_genesets_msigdbr_26.1.0.tsv (archived gene-set membership)
+│   └── original_2024_readcounts/        # original read-level counts, DE and GSEA results, master_2024.csv (for the
+│                                        #   before/after comparison in REANALYSIS.md; not used by any figure)
 ├── envs/                                # conda exports, R sessionInfo, run records, versions.md
 ├── 01_wgs_alignment/
 │   └── bwa_mem_markduplicates.pbs       # BWA-MEM → samtools sort → Picard MarkDuplicates (env evc_main)
@@ -146,4 +151,5 @@ Run-time versions; the evidence for each (conda export, run record or log) is li
 The RNA-seq count matrix was rebuilt with fragment counting (`featureCounts -p --countReadPairs`) and an ID-keyed merge,
 and DESeq2/GSEA were re-run; the ecDNA+ vs ecDNA− signature changed from 498/374 to 486/404 genes (FDR < 0.05,
 |log2FC| > 1) with the same Hallmark enrichments. The MYCN FPKM and copy-number tables were rebuilt from pipeline output.
-Original outputs are preserved; all changes and the reasons for them are recorded in `REANALYSIS.md`.
+Original outputs are preserved in `data/original_2024_readcounts/`; all changes, the reasons for them and a before/after
+validation table are recorded in `REANALYSIS.md`.

@@ -280,3 +280,34 @@ per-batch `$RNA_LIST`, and log tool versions (`log_version`). No script contains
 (PBS, batch 1) was replaced by `06_stringtie_batch1.sh` and a new `06_stringtie_batch2.sh` reproducing the batch 2
 SLURM job (`-e`, unflagged STAR BAM). `08_merge_counts.sh --join` builds the 21-line matrix from `$BATCH1_COUNTS` /
 `$BATCH2_COUNTS`. Resource requests and tool flags are unchanged from the executed jobs.
+
+## Required final validation — before / after (2026-10-26)
+
+"Before" = original 2024 analysis (read-level featureCounts, hand-entered tables; `data/original_2024_readcounts/`).
+"After" = frozen inputs in `data/` and `data/deseq2_gsea/` (fragment-level counts, scripted tables).
+
+| Item | Before (2024) | After (2026) | Note |
+|---|---|---|---|
+| Cell lines | 21 | 21 | identical IDs (`samples.tsv`) |
+| Group membership | 15 MYCN-amp/ecDNA+ : 6 non-amp/ecDNA− | 15 : 6 | identical lines; `MYCN_amp` and `ecDNA_group` coincide for all 21 (point 8) |
+| DE genes (FDR < 0.05, \|log2FC\| > 1) | 498 up / 374 down (17,815 tested) | 486 up / 404 down (17,135 tested) | fragment counting (point 4); log2FC Pearson r = 0.958 over 35,278 shared genes |
+| MYCN expression, ecDNA+ vs ecDNA− | median 413.8 FPKM; one-sided Mann-Whitney p = 1.8e-05 | median 426.6 FPKM; p = 1.8e-05 | FPKM table rebuilt from StringTie output; ranks unchanged |
+| Replication-stress panel | 29 genes ("n = 30" string in script/legend) | 29 genes (`data/deseq2_gsea/rs_genes.txt`) | point 9 |
+| Hallmark GSEA | 18 of 50 sets FDR < 0.05 | 22 of 50 | NES Pearson r = 0.9998; same top sets (MYC targets V1, E2F, G2M up; IFN-γ/α down); 4 sets newly below FDR 0.05 (estrogen response late, ROS pathway, UPR, UV response down); none lost |
+| Chromothripsis calls per line | 15 positive | 15 positive | `Chromothripsis_status` / `_counts` identical (not re-run) |
+| ecDNA counts / SV burden per line | — | — | identical to 2024 values; ecDNA counts validated against final-run summaries |
+| MYCN copy number | hand-entered from superseded run | scripted from final run | 10 lines differ by ≤ 2 % (amplified) or < 1 copy (non-amplified) |
+
+## Audit point 14 — Figure 3–4 analysis code: not addressed (2026-10-26)
+
+The functional-assay analyses (R2 survival grouping, DepMap processing, dose-response / AUC, caspase and immunoblot
+quantification) were not performed by the maintainer of this repository and no scripts for them are included.
+The README states that Figures 3 and 4 are not generated from this repository. This point remains open.
+
+## Audit point 7 — Hallmark gene sets pinned and archived (2026-10-26)
+
+`02_gsea_and_RS_genes.R` uses `msigdbr(collection = "H")`, stops unless msigdbr >= 26.1.0 (MSigDB 2026.1.Hs), writes
+`gsea_session_versions.txt`, and now also writes the gene-set membership it used
+(`hallmark_genesets_msigdbr_<version>.tsv`: gs_name, gene_symbol, ensembl_gene). The archived file for the published run,
+`data/deseq2_gsea/hallmark_genesets_msigdbr_26.1.0.tsv` (50 sets, 7,331 set-gene rows), was generated with the same
+msigdbr 26.1.0 installation that produced `hallmark_GSEA_results.csv`.
