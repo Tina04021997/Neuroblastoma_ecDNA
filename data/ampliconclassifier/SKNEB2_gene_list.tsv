@@ -1,0 +1,5 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+SKNEB2	amplicon1	ecDNA_1	GACAT3	416.6839180772536	None	False
+SKNEB2	amplicon1	ecDNA_1	MYCN	412.262869453553	None	True
+SKNEB2	amplicon1	ecDNA_1	MYCNOS	412.262869453553	3p	False
+SKNEB2	amplicon2	Linear_1	MYOM2	6.063262358325161	5p	False

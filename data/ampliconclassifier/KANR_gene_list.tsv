@@ -1,0 +1,5 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+KANR	amplicon1	ecDNA_1	GACAT3	111.20852004990583	None	False
+KANR	amplicon1	ecDNA_1	MYCN	109.06185715367057	None	True
+KANR	amplicon1	ecDNA_1	MYCNOS	109.06185715367057	None	False
+KANR	amplicon1	ecDNA_1	MYCNUT	109.06185715367057	None	False

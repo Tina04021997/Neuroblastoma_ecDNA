@@ -1,0 +1,10 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+CHP212	amplicon1	ecDNA_1	DDX1	103.99820521829243	None	False
+CHP212	amplicon1	ecDNA_1	GACAT3	103.90449247003595	3p	False
+CHP212	amplicon1	ecDNA_1	GREB1	108.32272526813	5p	False
+CHP212	amplicon1	ecDNA_1	LPIN1	108.32272526813	None	False
+CHP212	amplicon1	ecDNA_1	MYCN	103.90449247003595	None	True
+CHP212	amplicon1	ecDNA_1	MYCNOS	103.90449247003595	None	False
+CHP212	amplicon1	ecDNA_1	MYCNUT	103.90449247003595	None	False
+CHP212	amplicon1	ecDNA_1	NTSR2	108.32272526813	None	False
+CHP212	amplicon1	ecDNA_1	TRIB2	108.27216768966183	None	True

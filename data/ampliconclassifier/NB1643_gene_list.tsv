@@ -1,0 +1,6 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+NB1643	amplicon1	ecDNA_1	DDX1	229.6167470009714	5p	False
+NB1643	amplicon1	ecDNA_1	GACAT3	508.6874756350528	None	False
+NB1643	amplicon1	ecDNA_1	MYCN	495.452056730876	None	True
+NB1643	amplicon1	ecDNA_1	MYCNOS	473.4184854458162	None	False
+NB1643	amplicon1	ecDNA_1	MYCNUT	473.4184854458162	None	False

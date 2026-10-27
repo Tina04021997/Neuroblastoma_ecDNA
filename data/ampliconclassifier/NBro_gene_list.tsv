@@ -1,0 +1,6 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+NBro	amplicon1	ecDNA_1	FAM49A	17.67838856732115	5p	False
+NBro	amplicon1	ecDNA_1	GACAT3	19.143567020138363	None	False
+NBro	amplicon1	ecDNA_1	MYCN	17.447286250262916	None	True
+NBro	amplicon1	ecDNA_1	MYCNOS	17.447286250262916	None	False
+NBro	amplicon1	ecDNA_1	MYCNUT	17.447286250262916	None	False

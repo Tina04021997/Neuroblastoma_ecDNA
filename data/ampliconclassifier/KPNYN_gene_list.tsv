@@ -1,0 +1,5 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+KPNYN	amplicon1	ecDNA_1	GACAT3	195.59608670591473	None	False
+KPNYN	amplicon1	ecDNA_1	MYCN	255.20426278056766	None	True
+KPNYN	amplicon1	ecDNA_1	MYCNOS	255.20426278056766	None	False
+KPNYN	amplicon1	ecDNA_1	MYCNUT	255.20426278056766	None	False

@@ -1,0 +1,13 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+KCNR	amplicon1	ecDNA_1	ATP6V1C2	34.82293569232222	None	False
+KCNR	amplicon1	ecDNA_1	GACAT3	169.4418196737155	None	False
+KCNR	amplicon1	ecDNA_1	HPCAL1	35.84810721287258	5p	False
+KCNR	amplicon1	ecDNA_1	MYCN	167.75705653147665	None	True
+KCNR	amplicon1	ecDNA_1	MYCNOS	167.75705653147665	None	False
+KCNR	amplicon1	ecDNA_1	MYCNUT	167.77670761265773	None	False
+KCNR	amplicon1	ecDNA_1	NOL10	36.48230319504803	None	False
+KCNR	amplicon1	ecDNA_1	ODC1	35.84810721287258	None	False
+KCNR	amplicon1	ecDNA_1	ODC1-DT	36.48230319504803	None	False
+KCNR	amplicon1	ecDNA_1	PDIA6	34.82293569232222	5p	False
+KCNR	amplicon1	ecDNA_1	RN7SL832P	34.82293569232222	None	False
+KCNR	amplicon1	ecDNA_1	SNORA80B	35.84810721287258	None	False

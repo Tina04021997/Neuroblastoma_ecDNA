@@ -1,0 +1,6 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+LAN1	amplicon2	ecDNA_1	DDX1	87.194702513038	None	False
+LAN1	amplicon2	ecDNA_1	GACAT3	137.16866727121928	None	False
+LAN1	amplicon2	ecDNA_1	MYCN	123.78277462207974	None	True
+LAN1	amplicon2	ecDNA_1	MYCNOS	123.78277462207974	3p	False
+LAN1	amplicon2	ecDNA_1	NBAS	104.91595212322805	3p	False

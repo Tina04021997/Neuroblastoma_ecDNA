@@ -1,0 +1,10 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+IMR32	amplicon1	ecDNA_1	DDX1	261.15158573755775	None	False
+IMR32	amplicon1	ecDNA_1	GBP2	265.6133278214265	None	False
+IMR32	amplicon1	ecDNA_1	GBP4	265.6133278214265	None	False
+IMR32	amplicon1	ecDNA_1	GBP5	16.909148087787887	None	False
+IMR32	amplicon1	ecDNA_1	GBP7	265.6133278214265	None	False
+IMR32	amplicon1	ecDNA_1	MYCN	268.2111851626432	None	True
+IMR32	amplicon1	ecDNA_1	MYCNOS	268.2111851626432	None	False
+IMR32	amplicon1	ecDNA_1	MYCNUT	268.2111851626432	None	False
+IMR32	amplicon1	ecDNA_1	NBAS	261.4114801676193	None	False

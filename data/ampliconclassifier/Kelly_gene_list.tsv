@@ -1,0 +1,6 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+Kelly	amplicon1	ecDNA_1	FAM49A	486.19381939785814	5p	False
+Kelly	amplicon1	ecDNA_1	GACAT3	471.27114746453356	None	False
+Kelly	amplicon1	ecDNA_1	MYCN	505.27389965620057	None	True
+Kelly	amplicon1	ecDNA_1	MYCNOS	505.27389965620057	None	False
+Kelly	amplicon1	ecDNA_1	MYCNUT	505.27389965620057	None	False

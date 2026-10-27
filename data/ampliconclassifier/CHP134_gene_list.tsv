@@ -1,0 +1,10 @@
+sample_name	amplicon_number	feature	gene	gene_cn	truncated	is_canonical_oncogene
+CHP134	amplicon1	ecDNA_1	DDX1	262.5231668950995	None	False
+CHP134	amplicon1	ecDNA_1	GBP2	268.2124085598503	None	False
+CHP134	amplicon1	ecDNA_1	GBP4	268.2124085598503	None	False
+CHP134	amplicon1	ecDNA_1	GBP5	16.99106470706117	None	False
+CHP134	amplicon1	ecDNA_1	GBP7	268.2124085598503	None	False
+CHP134	amplicon1	ecDNA_1	MYCN	275.72774534520426	None	True
+CHP134	amplicon1	ecDNA_1	MYCNOS	275.72774534520426	None	False
+CHP134	amplicon1	ecDNA_1	MYCNUT	275.72774534520426	None	False
+CHP134	amplicon1	ecDNA_1	NBAS	259.00565343720393	None	False
