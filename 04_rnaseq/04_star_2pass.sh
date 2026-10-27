@@ -1,89 +1,70 @@
 #!/bin/bash
-# Job generator: writes one SLURM script per sample (<sample>_STAR.sh).
-# Run them one at a time: step 3 rebuilds a shared SJ_index directory.
+# Writes one SLURM script per sample (<sample>_STAR.sh) into $STAR_DIR, then submit with sbatch.
+# Run the generated jobs ONE AT A TIME: step 3 rebuilds the shared $STAR_REF/SJ_index directory.
+# STAR 2.7.10b, 2-pass mapping of the non-rRNA reads from 03_sortmerna.sh against the GRCh38 primary assembly
+# with the GENCODE v44 basic GTF ($STAR_REF, built once with the commented step 1). Original run Feb 7, 2024.
+# Usage: bash 04_star_2pass.sh   (samples from $RNA_LIST of the current batch, config.sh)
 
-# ── Paths: edit before running ───────────────────────────────────────────────
-WORK_DIR=/path/to/rnaseq                             # contains list.txt (one sample ID per line)
-STAR_REF=/path/to/references/STAR/GRCh38                    # STAR index; contains GRCh38.primary_assembly.genome.fa + gencode.v44.basic.annotation.gtf
-# ─────────────────────────────────────────────────────────────────────────────
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/../config.sh"
 
-cd ${WORK_DIR}
-mkdir STAR
-cd STAR
-mkdir logs.o
-mkdir logs.e
+require_file "${RNA_GENOME_FA}" "${GTF}"
+mkdir -p "${STAR_DIR}/logs.o" "${STAR_DIR}/logs.e"
+cd "${STAR_DIR}"
 
-for file in $(cat ${WORK_DIR}/list.txt); do echo -e "#!/bin/bash
-
+for file in $(sample_ids); do
+    require_file "${SORTRNA_DIR}/${file}/out/other_fwd.fq" "${SORTRNA_DIR}/${file}/out/other_rev.fq"
+    cat > "${file}_STAR.sh" <<EOF
+#!/bin/bash
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -c 64
 #SBATCH -t 100:00:00
 #SBATCH --mem=100G
-#SBATCH -p <partition>
-#SBATCH -A <account>
+#SBATCH -p ${SLURM_PARTITION}
+#SBATCH -A ${SLURM_ACCOUNT}
 #SBATCH --job-name=${file}_STAR
-#SBATCH --output=${WORK_DIR}/STAR/logs.o/${file}.o
-#SBATCH --error=${WORK_DIR}/STAR/logs.e/${file}.e
+#SBATCH --output=${STAR_DIR}/logs.o/${file}.o
+#SBATCH --error=${STAR_DIR}/logs.e/${file}.e
 
-# Author: Tina Yang
-# Date: Feb 7, 2024
-# STAR 2-pass mapping script for PE
-# STAR v2.7.10b
+# Author: Tina Yang — STAR 2-pass mapping (PE) for ${file}; original run Feb 7, 2024
+# Steps: 1. index genome with annotation (once) 2. 1-pass mapping 3. re-index with SJ.out.tab 4. 2-pass mapping
+set -euo pipefail
+source "${REPO_DIR}/config.sh"
+activate_env rna-seq
 
-# Reference: GRCh38
-# Steps:
-#1. Indexing genome with annotations
-#2. 1-pass mapping with indexed genome
-#3. Indexing genome with annotations and SJ.out.tab files
-#4. 2-pass mapping with new indexed genome with annotations and SJ.out.tab files
+#  # Step 1 — indexing (run once, not per sample)
+#  STAR --runMode genomeGenerate --genomeDir "${STAR_REF}" \\
+#       --genomeFastaFiles "${RNA_GENOME_FA}" --sjdbGTFfile "${GTF}" --runThreadN 32
 
-# Set up envs
-mamba activate rna-seq
+mkdir -p "${STAR_DIR}/${file}"
+cd "${STAR_DIR}/${file}"
+log_version "STAR --version" ${file}.star.versions.txt
 
-# Dataset
-OUT_DIR='${WORK_DIR}/STAR'
-FQ_PATH='${WORK_DIR}/sort_rna'
-ANNOTATION_PATH='${STAR_REF}'
-
-
-
-#  # Step1 Indexing (run once, not per sample)
-#  STAR \
-#  --runMode genomeGenerate \
-#  --genomeDir \$ANNOTATION_PATH \
-#  --genomeFastaFiles \$ANNOTATION_PATH/GRCh38.primary_assembly.genome.fa \
-#  --sjdbGTFfile \$ANNOTATION_PATH/gencode.v44.basic.annotation.gtf \
-#  --runThreadN 32
-
-## Create output folder
-mkdir \"\$OUT_DIR/${file}\"
-cd \"\$OUT_DIR/${file}\"
-
-
-# Step2 Mapping-1-pass
-STAR \
---genomeDir \"\$ANNOTATION_PATH\" \
---readFilesIn \"\$FQ_PATH/${file}/out/other_fwd.fq\" \"\$FQ_PATH/${file}/out/other_rev.fq\" \
---outFileNamePrefix ${file}_PASS1_result \
+# Step 2 — 1-pass mapping
+STAR \\
+--genomeDir "${STAR_REF}" \\
+--readFilesIn "${SORTRNA_DIR}/${file}/out/other_fwd.fq" "${SORTRNA_DIR}/${file}/out/other_rev.fq" \\
+--outFileNamePrefix ${file}_PASS1_result \\
 --runThreadN 64
 
-# Step3 Indexing genome with annotations and SJ.out.tab file
-STAR \
---runMode genomeGenerate \
---genomeDir \"\$ANNOTATION_PATH/SJ_index\" \
---genomeFastaFiles \"\$ANNOTATION_PATH/GRCh38.primary_assembly.genome.fa\" \
---sjdbGTFfile \"\$ANNOTATION_PATH/gencode.v44.basic.annotation.gtf\" \
---runThreadN 64 \
---sjdbFileChrStartEnd \"\$OUT_DIR/${file}/${file}_PASS1_resultSJ.out.tab\"
+# Step 3 — re-index with this sample's splice junctions (shared SJ_index: run samples one at a time)
+STAR \\
+--runMode genomeGenerate \\
+--genomeDir "${STAR_REF}/SJ_index" \\
+--genomeFastaFiles "${RNA_GENOME_FA}" \\
+--sjdbGTFfile "${GTF}" \\
+--runThreadN 64 \\
+--sjdbFileChrStartEnd "${STAR_DIR}/${file}/${file}_PASS1_resultSJ.out.tab"
 
-
-# Step 4 2-pass mapping output alignments in BAM format and sort BAM by coordinate
-STAR \
---genomeDir \"\$ANNOTATION_PATH/SJ_index\" \
---readFilesIn \"\$FQ_PATH/${file}/out/other_fwd.fq\" \"\$FQ_PATH/${file}/out/other_rev.fq\" \
---outFileNamePrefix ${file}_PASS2_result \
---runThreadN 64 \
---outSAMtype BAM SortedByCoordinate \
+# Step 4 — 2-pass mapping, coordinate-sorted BAM
+STAR \\
+--genomeDir "${STAR_REF}/SJ_index" \\
+--readFilesIn "${SORTRNA_DIR}/${file}/out/other_fwd.fq" "${SORTRNA_DIR}/${file}/out/other_rev.fq" \\
+--outFileNamePrefix ${file}_PASS2_result \\
+--runThreadN 64 \\
+--outSAMtype BAM SortedByCoordinate \\
 --outSAMstrandField intronMotif
-" > "${file}_STAR.sh"; done
+EOF
+    echo "wrote ${file}_STAR.sh"
+done

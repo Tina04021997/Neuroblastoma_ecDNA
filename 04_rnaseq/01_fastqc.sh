@@ -1,37 +1,29 @@
 #!/bin/bash
-
 #SBATCH -N 1
 #SBATCH -n 1
 #SBATCH -c 64
 #SBATCH -t 100:00:00
 #SBATCH --mem=100G
-#SBATCH -p <partition>
-#SBATCH -A <account>
 #SBATCH --job-name=FastQC
 #SBATCH --output=logs.o/FASTQC.o
 #SBATCH --error=logs.e/FASTQC.e
+# Partition/account: pass at submission, e.g.  sbatch -p $SLURM_PARTITION -A $SLURM_ACCOUNT 01_fastqc.sh
+# (the SBATCH header cannot read config.sh).
 
-# Author: Tina Yang
-# Date: Feb 6, 2024
-# Run FastQC
+# Author: Tina Yang — FastQC 0.12.1 on the raw paired FASTQs of one sequencing batch; original run Feb 6, 2024.
+# Run once per batch from $RNA_DIR (config.sh): samples are read from $RNA_LIST.
 
-# Set up envs
-mamba activate rna-seq
+set -euo pipefail
+source "$(dirname "${BASH_SOURCE[0]}")/../config.sh"
+activate_env rna-seq
 
-# ── Paths: edit before running ───────────────────────────────────────────────
-WORK_DIR=/path/to/rnaseq                        
-OUT_DIR=${WORK_DIR}/fastqc
-FASTQ_DIR=/path/to/rnaseq/fastq                     
-# ─────────────────────────────────────────────────────────────────────────────
+mkdir -p "${FASTQC_DIR}/logs.o" "${FASTQC_DIR}/logs.e"
+cd "${FASTQC_DIR}"
+log_version "fastqc --version" fastqc.versions.txt
 
-## Create output folder
-cd $WORK_DIR
-mkdir fastqc
-cd fastqc
-mkdir logs.o
-mkdir logs.e
-
-## Run FASTQC
-for file in $(cat $WORK_DIR/list.txt); do fastqc -o $OUT_DIR $FASTQ_DIR/${file}/${file}_1.fq.gz $FASTQ_DIR/${file}/${file}_2.fq.gz; done
+for file in $(sample_ids); do
+    require_file "${RNA_FASTQ_DIR}/${file}/${file}_1.fq.gz" "${RNA_FASTQ_DIR}/${file}/${file}_2.fq.gz"
+    fastqc -o "${FASTQC_DIR}" "${RNA_FASTQ_DIR}/${file}/${file}_1.fq.gz" "${RNA_FASTQ_DIR}/${file}/${file}_2.fq.gz"
+done
 
 echo "!!!! FastQC done !!!!"
