@@ -1,19 +1,44 @@
+"""Figure 2C — volcano plot of DESeq2 results (ecDNA+ vs ecDNA−).
+
+Input : deseq2_results_ecDNA.csv from 05_differential_expression/01_deseq2_ecDNA.R
+Output: volcano_ecDNA.pdf
+
+Genes with NA padj (removed by DESeq2 independent filtering) are not plotted, so the
+legend counts (n up / down / not significant) sum to the number of genes tested, not
+to the number of rows in the CSV. Fragment-level counts (Oct 2026 re-count) give
+486 up / 404 down / 16,245 not significant.
+"""
+import sys
 import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
+import adjustText
 from adjustText import adjust_text
 
+# ── Paths: edit before running ────────────────────────────────────────────────
+DESEQ2_CSV = '/path/to/deseq2/deseq2_results_ecDNA.csv'
+OUT_PDF    = '/path/to/figures/volcano_ecDNA.pdf'
+# ─────────────────────────────────────────────────────────────────────────────
+
+print(f"python {sys.version.split()[0]} | pandas {pd.__version__} | matplotlib {matplotlib.__version__} "
+      f"| adjustText {getattr(adjustText, '__version__', 'unknown')}")
+
 # ── Data ──────────────────────────────────────────────────────────────────────
-df = pd.read_csv('./deseq2_results_ecDNA.csv')
+df = pd.read_csv(DESEQ2_CSV)
 df = df.rename(columns={'Unnamed: 0': 'ensembl'})
+n_total = len(df)
 df = df.dropna(subset=['padj', 'log2FoldChange']).reset_index(drop=True)
+print(f"Genes in CSV: {n_total}; with padj (plotted): {len(df)}")
 
 # ── Thresholds ────────────────────────────────────────────────────────────────
 FC_THR  = 1.0
 FDR_THR = 0.05
+N_LABEL = 15                      # label the N most significant DE genes (by padj)
+LEFT_LABELS = {'TBC1D17'}         # cosmetic: labels placed manually to the left to avoid
+                                  # the dense centre; applied only if the gene is in the top N
 
 # ── Significance category ─────────────────────────────────────────────────────
 def categorise(row):
@@ -29,7 +54,7 @@ df['neg_log10_padj'] = -np.log10(df['padj'])
 
 # ── Gene selections ───────────────────────────────────────────────────────────
 sig_df = df[df['category'] != 'ns'].copy()
-top15  = sig_df.nsmallest(15, 'padj')['Symbol'].tolist()
+top_n  = sig_df.nsmallest(N_LABEL, 'padj')['Symbol'].tolist()
 
 # ── Style ─────────────────────────────────────────────────────────────────────
 BG       = 'white'
@@ -64,8 +89,8 @@ ax.axhline(-np.log10(FDR_THR), color=C_SPINE, lw=0.8, ls='--', zorder=0)
 ax.axvline( FC_THR,             color=C_SPINE, lw=0.8, ls='--', zorder=0)
 ax.axvline(-FC_THR,             color=C_SPINE, lw=0.8, ls='--', zorder=0)
 
-# ── Top 15 labels using adjustText with tight bounds ─────────────────────────
-label_df = df[df['Symbol'].isin(top15)].copy()
+# ── Top-N labels using adjustText with tight bounds ──────────────────────────
+label_df = df[df['Symbol'].isin(top_n)].copy()
 
 # Points to avoid (all plotted points) — pass to adjustText
 all_x = df['log2FoldChange'].values
@@ -79,9 +104,8 @@ for _, row in label_df.iterrows():
     y = row['neg_log10_padj']
     c = C_DOWN if row['log2FoldChange'] < 0 else C_UP
 
-    # FIX: TBC1D17 — force label to the left side
-    if row['Symbol'] == 'TBC1D17':
-        ax.annotate('TBC1D17',
+    if row['Symbol'] in LEFT_LABELS:
+        ax.annotate(row['Symbol'],
             xy     = (x, y),
             xytext = (x - 5.0, y + 0.5),
             fontsize=10 * FONT_SCALE, color=c,
@@ -138,8 +162,8 @@ ax.legend(handles=patches, fontsize=10 * FONT_SCALE, frameon=False,
           loc='upper center', ncol=3, bbox_to_anchor=(0.5, 1.06))
 
 plt.tight_layout(pad=1.5)
-fig.savefig('./volcano_ecDNA.pdf', dpi=900, bbox_inches='tight')
+fig.savefig(OUT_PDF, dpi=900, bbox_inches='tight')
 plt.close(fig)
-print("Saved: volcano_ecDNA.pdf")
+print(f"Saved: {OUT_PDF}")
 print(f"Up: {n_up}  |  Down: {n_down}  |  NS: {n_ns}")
-print(f"Top 15: {top15}")
+print(f"Top {N_LABEL} labelled: {top_n}")

@@ -6,7 +6,7 @@ import matplotlib.patches as mpatches
 import numpy as np
 
 # ── Data ──────────────────────────────────────────────────────────────────────
-df = pd.read_csv('./FPKM_CN_MYCN.txt', sep='\t')   # manually assembled table, see data/README.md
+df = pd.read_csv('../data/FPKM_CN_MYCN.txt', sep='\t')   # written by 00_build_figure_tables.py
 
 # ── Style tokens ──────────────────────────────────────────────────────────────
 BG       = 'white'

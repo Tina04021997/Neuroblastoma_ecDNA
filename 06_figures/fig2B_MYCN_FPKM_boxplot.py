@@ -7,7 +7,7 @@ import numpy as np
 from scipy import stats
 
 # ── Data ──────────────────────────────────────────────────────────────────────
-df = pd.read_csv('./MYCN_FPKM.txt', sep='\t')   # manually assembled table, see data/README.md
+df = pd.read_csv('../data/MYCN_FPKM.txt', sep='\t')   # written by 00_build_figure_tables.py
 
 # ── Style tokens ──────────────────────────────────────────────────────────────
 BG       = 'white'
