@@ -59,7 +59,7 @@ statement for any accession numbers.
 ├── README.md
 ├── REANALYSIS.md                        # what was re-run during the 2026 code audit, and what changed
 ├── AUDIT_RESPONSE.md                    # point-by-point response to the audit checklist and the before/after table
-├── samples.tsv                          # 21 lines: sample_id, cell_line, rna_batch, list_order, MYCN_amp, ecDNA_group, ecDNA_count, wgs_id, stringtie_mode, dna_id
+├── samples.tsv                          # 21 lines: sample_id, cell_line (display name in Fig 1A/1B/2A = Methods list), rna_batch, list_order, MYCN_amp, ecDNA_group, ecDNA_count, wgs_id, stringtie_mode, dna_id
 ├── config.example.sh                    # copy to config.sh (git-ignored): paths, scheduler, conda; sourced by every script
 ├── data/                                # scripted tables behind Figs 1A/2A/2B
 │   ├── MYCN_CN.tsv                      # 02_ecDNA/03_extract_MYCN_CN.py
@@ -76,7 +76,7 @@ statement for any accession numbers.
 │                                        #   before/after comparison in REANALYSIS.md; not used by any figure)
 ├── envs/                                # conda exports, R sessionInfo, figures_python.txt, run records, versions.md
 ├── 01_wgs_alignment/
-│   └── bwa_mem_markduplicates.pbs       # BWA-MEM → samtools sort → Picard MarkDuplicates (env evc_main)
+│   └── bwa_mem_markduplicates.pbs       # BWA-MEM → samtools sort → Picard MarkDuplicates (env evc_main); qsub -q $PBS_QUEUE -A $PBS_ACCOUNT -v SAMPLE=<dna_id>
 ├── 02_ecDNA/
 │   ├── 01_run_ampliconsuite.sh          # PrepareAA: CNVkit (CBS) → AmpliconArchitect → AmpliconClassifier
 │   ├── 02_run_cycleviz.sh               # ecDNA cycle visualization (Fig 1B)
@@ -103,7 +103,8 @@ statement for any accession numbers.
 ├── 05_differential_expression/
 │   ├── 01_deseq2_ecDNA.R                # ecDNA+ vs ecDNA− (groups from samples.tsv; reference level ecDNA−); args: <deseq_dir> <samples.tsv>
 │   ├── 02_gsea_and_RS_genes.R           # Hallmark GSEA (fgsea, seed 42, MSigDB 2026.1.Hs), 29 RS genes
-│   └── 03_export_FPKM_tables.R          # MYCN / CHEK1 FPKM from StringTie gene abundance tables; RS heatmap
+│   ├── 03_export_FPKM_tables.R          # MYCN / CHEK1 FPKM from StringTie gene abundance tables; RS heatmap
+│   └── 04_batch_sensitivity.R           # sensitivity only: ~rna_batch + MYCN_amp vs the published ~MYCN_amp (REANALYSIS.md)
 └── 06_figures/
     ├── 00_build_figure_tables.py        # assembles data/MYCN_FPKM.txt, FPKM_CN_MYCN.txt, master.csv
     ├── 01_check_figure_tables.py        # asserts IDs / MYCN status / CN / FPKM agree across all figure tables (point 12)
@@ -163,7 +164,10 @@ Notes
 - `master.csv` columns `ecDNA_counts` and `oncogene_on_ecDNA` are curated from AmpliconClassifier output; `04_check_ecDNA_columns.py`
   asserts them against the final-run `*_ecDNA_counts.tsv` / `*_gene_list.tsv` in `data/ampliconclassifier/` (all 21 lines agree), and
   `fig1A_oncoprint.ipynb` takes the per-amplicon oncogene assignment from the AmpliconArchitect summaries in `data/ecDNA_summary/`;
-  `Chromothripsis_*` and `SV_burden` come from `03_chromothripsis/`; the MYCN/CHEK1 columns are rebuilt by the scripts above.
+  `Chromothripsis_status` / `Chromothripsis_counts` are reproduced by `03_chromothripsis/06_call_high_confidence_chromothripsis.ipynb`;
+  the MYCN/CHEK1 columns are rebuilt by the scripts above. Two columns of the 2024 table that no figure or manuscript
+  statement uses and that are not derivable from this repository (`SV_burden`, `Chromothripsis_in_amplicon`) were dropped
+  from `data/master.csv`; they remain in `data/original_2024_readcounts/master_2024.csv`.
 
 ## Software versions
 

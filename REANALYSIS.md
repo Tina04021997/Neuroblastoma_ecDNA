@@ -187,6 +187,23 @@ asserts that sample IDs, MYCN status, ecDNA group and count, MYCN copy number an
 `samples.tsv`, `master.csv` (Fig 1A), `FPKM_CN_MYCN.txt` (Fig 2A), `MYCN_FPKM.txt` (Fig 2B), `MYCN_CN.tsv` and
 `MYCN_CHEK1_FPKM.csv`: 10 of 10 checks pass for all 21 lines (2026-10-27); a flipped label is caught (exit 1).
 
+## Sensitivity analysis — sequencing batch as a covariate (2026-10-27; not used for any figure)
+
+The published model is `~MYCN_amp`; the 21 lines come from two RNA-seq batches (batch 1: 6 amp / 4 no_amp, batch 2:
+9 amp / 2 no_amp; same STAR index and GTF, batch 2 not Picard-flagged, featureCounts identical for both). Because batch is
+not confounded with the groups, `05_differential_expression/04_batch_sensitivity.R` re-fits `~rna_batch + MYCN_amp` on the
+same fragment-level matrix and the published gene universe (35,278 symbol-mapped genes):
+
+| Model | DE genes (FDR < 0.05, \|log2FC\| > 1) | Note |
+|---|---|---|
+| `~MYCN_amp` (published) | 486 up / 404 down | reproduces `data/deseq2_gsea/deseq2_results_ecDNA.csv` exactly |
+| `~rna_batch + MYCN_amp` | 504 up / 488 down | 681 of the 890 published DE genes (77 %) remain DE; log2FC Pearson r = 0.896 over 16,892 genes tested in both |
+
+MYCN (log2FC 6.56 → 6.53), CHEK1 (padj 0.031 → 0.015), MCM7 (0.001 → 0.001) and FANCD2 (0.039 → 0.046) remain
+significant with the batch term; RRM1 moves from 0.031 to 0.066. The batch term therefore changes the size of the
+signature, not its direction or its replication-stress content. The manuscript keeps the single-covariate model described
+in the Methods; this comparison is recorded so that the question "was batch considered?" has a numerical answer.
+
 ## Audit point 5 — duplicate handling and StringTie modes (2026-10-23)
 
 **Chains actually executed**
@@ -277,6 +294,12 @@ AmpliconArchitect `#Amplicons` value counts amplicons of every class, so it is n
 5 ecDNA; SKN-BE2: 2 amplicons, 1 ecDNA; NB69: 1 linear amplicon, 0 ecDNA); the notebook no longer warns on that
 difference. `data/ecDNA_summary/` was confirmed identical to the final-run summaries for both batches. The Fig 1B
 chromosome-2 profile was not re-derived (user decision 2026-10-26).
+
+**Unused columns dropped (2026-10-27).** `master.csv` carried two hand-entered 2024 columns that no figure, check or
+manuscript sentence uses: `SV_burden` (a per-line DELLY call count from the 2024 run; it cannot be reproduced from the 2026
+VCFs with the lab's filter script, 0 of 21 match) and `Chromothripsis_in_amplicon`. Both were removed from `data/master.csv`
+so that every column of the figure table is scripted or asserted; the original values stay in
+`data/original_2024_readcounts/master_2024.csv`. Fig 1A is unchanged (regenerated after the change).
 
 ## Audit point 6 — software versions (2026-10-26)
 
@@ -435,3 +458,15 @@ The README states that Figures 3 and 4 are not generated from this repository. T
 (`hallmark_genesets_msigdbr_<version>.tsv`: gs_name, gene_symbol, ensembl_gene). The archived file for the published run,
 `data/deseq2_gsea/hallmark_genesets_msigdbr_26.1.0.tsv` (50 sets, 7,331 set-gene rows), was generated with the same
 msigdbr 26.1.0 installation that produced `hallmark_GSEA_results.csv`.
+
+## Cell-line display names in the figures (2026-10-28)
+
+**Finding.** Fig 1A labelled the columns with the WGS-style IDs of `master.csv` (SKN-BE2, SJ-NB10, SMS-KAN, LANS ...) and Fig 2A
+with the RNA file prefixes (SKNBE2, NB10, KAN, LANS ...), so the same line carried two names and neither matched the
+Methods list (SK-N-BE, SJ-NB-10, SMS-KAN, LAN-5 ...).
+
+**Change.** `samples.tsv` `cell_line` now holds the manuscript's cell-line names and is the single source of figure labels:
+`fig1A_oncoprint.ipynb` maps `master.csv` names through `wgs_id`, `fig2A_MYCN_CN_vs_FPKM.py` maps `sample_id` (third argument,
+passed by `make_figures.sh`), and `make_figures.sh` passes `--label` to `fig1B_chr2_copy_number.py` for the panel titles.
+`01_check_figure_tables.py` requires 21 unique non-empty `cell_line` values. File names, sample IDs and all data are unchanged;
+only the printed labels differ. To rename a line in every figure, edit its `cell_line` cell and re-run `make_figures.sh`.
