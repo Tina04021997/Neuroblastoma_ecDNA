@@ -1,0 +1,10 @@
+# Python packages used to regenerate Figures 1-2 locally (06_figures/make_figures.sh, 2026-10-27 run);
+# the figure scripts themselves do not pin versions. Install with: pip install -r envs/figures_python.txt
+# (Python 3.9.13, conda base environment on macOS)
+pandas==2.2.3
+numpy==1.24.4
+matplotlib==3.9.4
+scipy==1.13.1
+adjustText==0.8
+jupyter_core==4.11.1
+nbconvert==6.4.4

@@ -13,13 +13,13 @@
 
 # ── Repository and sample sheet ──────────────────────────────────────────────
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SAMPLES_TSV="${REPO_DIR}/samples.tsv"          # 21 lines; column 1 = sample_id (RNA/WGS file prefix)
+SAMPLES_TSV="${REPO_DIR}/samples.tsv"          # 21 lines; sample_id = RNA file prefix, dna_id = WGS file prefix (3 differ)
 
 # ── Scheduler ────────────────────────────────────────────────────────────────
-SLURM_PARTITION=<partition>
-SLURM_ACCOUNT=<account>
-PBS_QUEUE=<queue>
-PBS_ACCOUNT=<account>
+SLURM_PARTITION="<partition>"
+SLURM_ACCOUNT="<account>"
+PBS_QUEUE="<queue>"
+PBS_ACCOUNT="<account>"
 
 # ── Software ─────────────────────────────────────────────────────────────────
 CONDA_BASE=/path/to/conda                       # e.g. $HOME/miniforge3; envs: evc_main, rna-seq, ampsuite, ASCAT
@@ -78,7 +78,13 @@ require_file() {                                 # usage: require_file path [pat
     done
 }
 
-sample_ids() {                                   # usage: for s in $(sample_ids [list.txt]); do ...
+wgs_ids() {                                      # usage: ids=$(wgs_ids) || exit 1   -- the dna_id column of samples.tsv
+    require_file "$SAMPLES_TSV"                  # (WGS file prefix; differs from sample_id for NB10, SKNBE2, SKNrI)
+    awk -F'\t' 'NR==1{for(i=1;i<=NF;i++) if($i=="dna_id") c=i; if(!c){print "samples.tsv: no dna_id column" > "/dev/stderr"; exit 1}; next} $c!=""{print $c}' "$SAMPLES_TSV"
+}
+
+sample_ids() {                                   # usage: ids=$(sample_ids [list.txt]) || exit 1; for s in $ids; do ...
+                                                 # (assign first: a failing $(...) directly in a "for" list does not stop a set -e script)
     local list="${1:-$RNA_LIST}"                 # default: this batch's list.txt; blank lines skipped
     require_file "$list"
     grep -v '^[[:space:]]*$' "$list"
@@ -87,3 +93,14 @@ sample_ids() {                                   # usage: for s in $(sample_ids 
 log_version() {                                  # usage: log_version "featureCounts -v" out.txt
     { echo "# $(date -u +%Y-%m-%dT%H:%MZ)  host=$(hostname)"; eval "$1" 2>&1; } > "$2" || true
 }
+
+# Refuse to run with an unedited template: any value still in <angle brackets> or at /path/to/... stops the sourcing
+# script with a clear message (audit point 15). Derived values (${REF_DIR}/..., ${RNA_DIR}/...) are covered by their base.
+# Fill in every value listed here even if you only run one part of the pipeline (put a dummy value in the unused ones).
+for _v in SLURM_PARTITION SLURM_ACCOUNT PBS_QUEUE PBS_ACCOUNT CONDA_BASE AMPSUITE_DIR CYCLEVIZ_DIR DELLY_BIN REF_DIR \
+          WGS_FASTQ_DIR WGS_ALIGN_DIR ECDNA_DIR DELLY_DIR TMP_DIR RNA_DIR BATCH1_COUNTS BATCH2_COUNTS COUNTS_21 DESEQ_DIR; do
+    case "${!_v}" in
+        *"<"*|/path/to/*) echo "ERROR: ${_v} is still a placeholder in config.sh (edit config.sh first)" >&2; return 1 2>/dev/null || exit 1;;
+    esac
+done
+unset _v

@@ -304,7 +304,7 @@ SLURM job (`-e`, unflagged STAR BAM). `08_merge_counts.sh --join` builds the 21-
 | MYCN expression, ecDNA+ vs ecDNA− | median 413.8 FPKM; one-sided Mann-Whitney p = 1.8e-05 | median 426.6 FPKM; p = 1.8e-05 | FPKM table rebuilt from StringTie output; ranks unchanged |
 | Replication-stress panel | 29 genes ("n = 30" string in script/legend) | 29 genes (`data/deseq2_gsea/rs_genes.txt`) | point 9; `02_gsea_and_RS_genes.R` and `03_export_FPKM_tables.R` now `stopifnot` 29 unique symbols and that all 29 are present in the DESeq2 results (re-run 2026-10-27: outputs byte-identical) |
 | Hallmark GSEA | 18 of 50 sets FDR < 0.05 | 22 of 50 | NES Pearson r = 0.9998; same top sets (MYC targets V1, E2F, G2M up; IFN-γ/α down); 4 sets newly below FDR 0.05 (estrogen response late, ROS pathway, UPR, UV response down); none lost |
-| Chromothripsis calls per line | 15 positive | 15 positive | `Chromothripsis_status` / `_counts` identical (not re-run) |
+| Chromothripsis calls per line | 17 positive (30 high-confidence events) | 17 positive (30 events) | `Chromothripsis_status` / `_counts` of `master.csv` reproduced exactly by `06_call_high_confidence_chromothripsis.ipynb` run on the 21 ShatterSeek summaries of the 2026 DELLY/ShatterSeek run (2026-10-27); the earlier "15 positive" in this row was a transcription error |
 | ecDNA counts / SV burden per line | — | — | identical to 2024 values; ecDNA counts and oncogenes on ecDNA asserted against final-run AmpliconClassifier output (`04_check_ecDNA_columns.py`, 21/21 agree) |
 | MYCN copy number | hand-entered from superseded run | scripted from final run | 10 lines differ by ≤ 2 % (amplified) or < 1 copy (non-amplified) |
 
@@ -321,7 +321,7 @@ re-running; no result changed):
 - All 13 job scripts: `for s in $(sample_ids); do` did not stop on a missing sample list (a failed substitution inside a
   `for` word list is not caught by `set -e`); replaced by `ids=$(sample_ids) || exit 1`, which is.
 - `config.example.sh`: unquoted `<partition>` placeholders made the template unparsable; quoted, and a guard now stops any
-  script run with an unedited `config.sh`.
+  script sourcing a `config.sh` in which any value is still a placeholder.
 - `03_export_FPKM_tables.R`: takes its four paths as arguments (README usage corrected), stops on placeholders, no longer
   duplicates `MYCN_FPKM.txt` (single source: `00_build_figure_tables.py`), and sorts ecDNA+ rows first independent of the
   locale (`data/CHEK1_FPKM.csv` re-written in that order; same rows).
@@ -332,6 +332,34 @@ re-running; no result changed):
   on a wrong label and on a `MYCN_amp` / `ecDNA_group` disagreement; `00_build_figure_tables.py` and
   `03_export_FPKM_tables.R` reproduce the frozen tables byte for byte; `make_figures.sh` produces all panels and the
   re-computed Hallmark table is identical to the frozen copy.
+
+## Audit point 15 — single reproducible workflow (2026-10-27)
+
+- **No placeholder or hard-coded path remains in any script.** Cluster scripts take everything from `config.sh`
+  (template `config.example.sh`, which refuses to be used unedited); local scripts take their paths as command-line
+  arguments and stop with a usage message if a default placeholder is left. Converted today in addition to the figure
+  scripts: `01_deseq2_ecDNA.R <deseq_dir> <samples.tsv>`, `03_format_sv_for_shatterseek.py --in --out` (also fails on
+  a malformed record instead of raising an IndexError), `05_run_shatterseek.R <sample> <sv_dir> <cn_dir> <results_dir>
+  [chromosomes]` (the five hand-copied per-chromosome plot blocks became a loop over the same chromosomes 1, 2, 7, 3, 12;
+  `<sample>_summary.txt` is now written to `<results_dir>` instead of the working directory), and the chromothripsis
+  notebook reads `$SHATTERSEEK_RESULTS`. `01_deseq2_ecDNA.R` re-run through its arguments: results byte-identical.
+  Testing `03_format_sv_for_shatterseek.py` on the 2026 DELLY files showed that the repository copy differed from the
+  script actually executed on the cluster (`process_sv.py`): the executed version sets `chr2 = chr` when a record has
+  no `CHR2` field (DELLY 1.x omits it for intra-chromosomal DEL/DUP/INV), whereas the repository copy would have raised
+  an IndexError on the first such record. The repository script now carries the executed logic; its output for all 21
+  lines is byte-identical to the `sv_<sample>.txt` files used in the 2026 ShatterSeek run.
+  `06_call_high_confidence_chromothripsis.ipynb` executed on the 21 `<sample>_summary.txt` files of that run reproduces
+  `Chromothripsis_status` and `Chromothripsis_counts` of `master.csv` for all 21 lines (17 positive, 30 events); the
+  notebook now stops if the results folder is unset or empty. A second review also found that the three WGS job
+  generators (`01_run_ampliconsuite.sh`, `01_delly_call.sh`, `02_filter_delly_vcf.sh`) defaulted to the `sample_id`
+  column of `samples.tsv`, whereas the WGS files are named by `dna_id` (three lines differ); they now use a `wgs_ids`
+  helper that reads the `dna_id` column by header name.
+- **Inputs, commands, environments and output locations** are tabulated per stage in the README *Workflow* section;
+  run-time versions with evidence in `envs/versions.md`; conda exports in `envs/*.yml`; local R `sessionInfo` and the
+  Python package set used for figure regeneration (`envs/figures_python.txt`).
+- **Data access** is documented in the README *Data availability* section: raw sequencing data and per-sample pipeline
+  outputs stay on the cluster; everything needed for stages 5–6 (DESeq2 → figures) is archived under `data/`, and those
+  stages were run cleanly from the repository alone on 2026-10-27 (`make_figures.sh`).
 
 ## Audit point 11 — frozen figure inputs and a documented regeneration command (2026-10-27)
 

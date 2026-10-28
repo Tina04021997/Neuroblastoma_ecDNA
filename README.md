@@ -27,6 +27,32 @@ Figures 3 and 4 (functional assays) are not generated from this repository.
 Every number plotted in Figures 1A, 2A and 2B therefore traces to a file written by a pipeline script; see `data/` and
 `REANALYSIS.md` for how the tables were rebuilt.
 
+## Workflow
+
+One pass through the folders in numeric order. Cluster steps (SLURM/PBS, TSCC) read `config.sh`; local steps take their
+paths as arguments. `<s>` = sample ID (`samples.tsv`; WGS files use `dna_id`).
+
+| # | Stage | Script(s) | Environment | Input | Output |
+|---|---|---|---|---|---|
+| 1 | WGS alignment | `01_wgs_alignment/bwa_mem_markduplicates.pbs` | `evc_main` | `$WGS_FASTQ_DIR/<s>_{1,2}.fastq.gz`, `$WGS_REF_FASTA` | `$WGS_ALIGN_DIR/<s>/<s>_tumor_mkdp.bam` |
+| 2 | ecDNA | `02_ecDNA/01_run_ampliconsuite.sh` → `02_run_cycleviz.sh` (NGP) → `03_extract_MYCN_CN.py` → `04_check_ecDNA_columns.py` | `ampsuite`; local Python | duplicate-marked BAM | `$ECDNA_DIR/<s>/` (CNVkit calls, AA cycles/graphs, AC classification: archived in `data/ecDNA_summary/`, `data/ampliconclassifier/`); `data/MYCN_CN.tsv` |
+| 3 | Chromothripsis | `03_chromothripsis/01_delly_call.sh` → `02_filter_delly_vcf.sh` → `03_format_sv_for_shatterseek.py` → `04_format_cn_for_shatterseek.py` → `05_run_shatterseek.R` (per sample) → `06_call_high_confidence_chromothripsis.ipynb` | DELLY binary; `ASCAT` (R 4.2.2, ShatterSeek 1.1); local Python | BAM; CNVkit `*_CNV_CALLS.bed` from stage 2 | `$DELLY_DIR/<s>/<s>.vcf` → `<s>_sv.txt` → `sv_<s>.txt`; `<s>_cn.txt` (`data/chr2_cn/` for NGP, SKNFI); `<results_dir>/<s>_summary.txt`, `<s>_CT.pdf`; `chromothripsis_summary.tsv` → `Chromothripsis_*`, `SV_burden` columns of `data/master.csv` |
+| 4 | RNA-seq | `04_rnaseq/01`–`08b` (per batch) | `rna-seq` | `$RNA_FASTQ_DIR/<s>/<s>_{1,2}.fq.gz`, STAR index, GENCODE v44 GTF | STAR BAMs; `$STRINGTIE_DIR/<s>.gene.abundance.txt`; `$FC_DIR/final_counts.txt` per batch → `counts_21lines.txt` (archived: `data/deseq2_gsea/counts_21lines.txt`) |
+| 5 | DE / GSEA / FPKM tables | `05_differential_expression/01_deseq2_ecDNA.R <deseq_dir> samples.tsv` → `02_gsea_and_RS_genes.R <deseq2_results_ecDNA.csv> <out_dir>`; `03_export_FPKM_tables.R <stringtie_dir> samples.tsv <rs_genes.txt> <out_dir>` | local R 4.2.2 (`envs/R_sessionInfo_local.txt`) | `counts_21lines.txt`, `samples.tsv`; StringTie abundance tables | `data/deseq2_gsea/{deseq2_results_ecDNA.csv, hallmark_GSEA_results.csv, rs_genes.txt, hallmark_genesets_msigdbr_26.1.0.tsv}`; `data/{MYCN_CHEK1_FPKM.csv, CHEK1_FPKM.csv}` |
+| 6 | Figure tables and figures | `06_figures/00_build_figure_tables.py` → `make_figures.sh` | local Python (`envs/figures_python.txt`) + R | `data/` | `data/{MYCN_FPKM.txt, FPKM_CN_MYCN.txt, master.csv}`; `figures/fig1A…fig2E` |
+
+Stages 1–4 need the sequencing data and a cluster; stages 5–6 run on a laptop from the files in `data/` (stage 5 from the
+archived count matrix, stage 6 from the archived tables) — this is what `make_figures.sh` and the commands in *Usage* exercise.
+
+## Data availability
+
+The raw sequencing data (WGS and RNA-seq FASTQ/BAM of the 21 cell lines) and the intermediate per-sample pipeline outputs are
+not part of this repository (size; they live on the UCSD TSCC cluster under the paths set in `config.sh`). Everything needed
+to reproduce stages 5–6 and every number in Figures 1–2 is archived under `data/`: the fragment-level count matrix, the
+DESeq2 and GSEA results, the AmpliconArchitect / AmpliconClassifier summaries, the chromosome-2 copy-number tables and the
+figure tables. Raw data are available from the corresponding author on request; see the manuscript's data-availability
+statement for any accession numbers.
+
 ## Repository structure
 
 ```
@@ -47,7 +73,7 @@ Every number plotted in Figures 1A, 2A and 2B therefore traces to a file written
 │   │                                    #   hallmark_genesets_msigdbr_26.1.0.tsv (archived gene-set membership)
 │   └── original_2024_readcounts/        # original read-level counts, DE and GSEA results, master_2024.csv (for the
 │                                        #   before/after comparison in REANALYSIS.md; not used by any figure)
-├── envs/                                # conda exports, R sessionInfo, run records, versions.md
+├── envs/                                # conda exports, R sessionInfo, figures_python.txt, run records, versions.md
 ├── 01_wgs_alignment/
 │   └── bwa_mem_markduplicates.pbs       # BWA-MEM → samtools sort → Picard MarkDuplicates (env evc_main)
 ├── 02_ecDNA/
@@ -58,10 +84,10 @@ Every number plotted in Figures 1A, 2A and 2B therefore traces to a file written
 ├── 03_chromothripsis/
 │   ├── 01_delly_call.sh                 # SV calling (DELLY 1.7.2 static binary)
 │   ├── 02_filter_delly_vcf.sh           # PASS calls, chr1–22, X (tab-delimited column checks)
-│   ├── 03_format_sv_for_shatterseek.py
+│   ├── 03_format_sv_for_shatterseek.py  # <s>_sv.txt -> sv_<s>.txt (--in / --out)
 │   ├── 04_format_cn_for_shatterseek.py  # CNVkit *_CNV_CALLS.bed → ShatterSeek CN tables (also Fig 1B input)
-│   ├── 05_run_shatterseek.R             # env ASCAT
-│   └── 06_call_high_confidence_chromothripsis.ipynb
+│   ├── 05_run_shatterseek.R             # env ASCAT; args: <sample> <sv_dir> <cn_dir> <results_dir> [chromosomes]
+│   └── 06_call_high_confidence_chromothripsis.ipynb   # reads $SHATTERSEEK_RESULTS/<s>_summary.txt -> chromothripsis_summary.tsv
 ├── 04_rnaseq/
 │   ├── 01_fastqc.sh
 │   ├── 02_trim_galore.sh
@@ -74,7 +100,7 @@ Every number plotted in Figures 1A, 2A and 2B therefore traces to a file written
 │   ├── 08_merge_counts.sh               # gene × sample matrix, joined on Ensembl gene ID (fails on ID mismatch)
 │   └── 08b_featurecounts_sanity_check.sh
 ├── 05_differential_expression/
-│   ├── 01_deseq2_ecDNA.R                # ecDNA+ vs ecDNA− (groups from samples.tsv; reference level ecDNA−)
+│   ├── 01_deseq2_ecDNA.R                # ecDNA+ vs ecDNA− (groups from samples.tsv; reference level ecDNA−); args: <deseq_dir> <samples.tsv>
 │   ├── 02_gsea_and_RS_genes.R           # Hallmark GSEA (fgsea, seed 42, MSigDB 2026.1.Hs), 29 RS genes
 │   └── 03_export_FPKM_tables.R          # MYCN / CHEK1 FPKM from StringTie gene abundance tables; RS heatmap
 └── 06_figures/
