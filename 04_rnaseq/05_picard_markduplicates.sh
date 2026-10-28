@@ -12,7 +12,9 @@ activate_env rna-seq
 mkdir -p "${MARKDP_DIR}"
 log_version "picard MarkDuplicates --version" "${MARKDP_DIR}/picard.versions.txt"
 
-for file in $(sample_ids); do
+ids=$(sample_ids) || exit 1          # a failed substitution inside "for" would not stop the script
+
+for file in $ids; do
     bam="${STAR_DIR}/${file}/${file}_PASS2_resultAligned.sortedByCoord.out.bam"
     require_file "$bam"
     echo "start working on ${file} mark duplicate ..."

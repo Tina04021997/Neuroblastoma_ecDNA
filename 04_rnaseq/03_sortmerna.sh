@@ -11,7 +11,9 @@ require_file "${RRNA_DB}/smr_v4.3_default_db.fasta"
 mkdir -p "${SORTRNA_DIR}/logs.o" "${SORTRNA_DIR}/logs.e"
 cd "${SORTRNA_DIR}"
 
-for file in $(sample_ids); do
+ids=$(sample_ids) || exit 1          # a failed substitution inside "for" would not stop the script
+
+for file in $ids; do
     require_file "${TRIM_DIR}/${file}_1_val_1.fq.gz" "${TRIM_DIR}/${file}_2_val_2.fq.gz"
     cat > "${file}_sortRNA.sh" <<EOF
 #!/bin/bash

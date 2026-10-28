@@ -16,7 +16,9 @@ require_file "${GTF}"
 mkdir -p "${STRINGTIE_DIR}/logs_o" "${STRINGTIE_DIR}/logs_e"
 cd "${STRINGTIE_DIR}"
 
-for file in $(sample_ids); do
+ids=$(sample_ids) || exit 1          # a failed substitution inside "for" would not stop the script
+
+for file in $ids; do
     require_file "${MARKDP_DIR}/${file}.bam"
     cat > "${file}_stringtie.sh" <<EOF
 #!/bin/bash

@@ -21,7 +21,9 @@ mkdir -p "${FASTQC_DIR}/logs.o" "${FASTQC_DIR}/logs.e"
 cd "${FASTQC_DIR}"
 log_version "fastqc --version" fastqc.versions.txt
 
-for file in $(sample_ids); do
+ids=$(sample_ids) || exit 1          # a failed substitution inside "for" would not stop the script
+
+for file in $ids; do
     require_file "${RNA_FASTQ_DIR}/${file}/${file}_1.fq.gz" "${RNA_FASTQ_DIR}/${file}/${file}_2.fq.gz"
     fastqc -o "${FASTQC_DIR}" "${RNA_FASTQ_DIR}/${file}/${file}_1.fq.gz" "${RNA_FASTQ_DIR}/${file}/${file}_2.fq.gz"
 done

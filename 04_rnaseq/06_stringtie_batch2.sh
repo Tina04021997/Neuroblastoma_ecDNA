@@ -17,7 +17,9 @@ require_file "${GTF}"
 mkdir -p "${STRINGTIE_DIR}/logs.o" "${STRINGTIE_DIR}/logs.e"
 cd "${STRINGTIE_DIR}"
 
-for file in $(sample_ids); do
+ids=$(sample_ids) || exit 1          # a failed substitution inside "for" would not stop the script
+
+for file in $ids; do
     bam="${STAR_DIR}/${file}/${file}_PASS2_resultAligned.sortedByCoord.out.bam"
     require_file "$bam"
     cat > "${file}_stringtie.sh" <<EOF

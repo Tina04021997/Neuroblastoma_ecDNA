@@ -12,7 +12,9 @@ require_file "${RNA_GENOME_FA}" "${GTF}"
 mkdir -p "${STAR_DIR}/logs.o" "${STAR_DIR}/logs.e"
 cd "${STAR_DIR}"
 
-for file in $(sample_ids); do
+ids=$(sample_ids) || exit 1          # a failed substitution inside "for" would not stop the script
+
+for file in $ids; do
     require_file "${SORTRNA_DIR}/${file}/out/other_fwd.fq" "${SORTRNA_DIR}/${file}/out/other_rev.fq"
     cat > "${file}_STAR.sh" <<EOF
 #!/bin/bash

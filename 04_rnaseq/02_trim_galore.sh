@@ -20,7 +20,9 @@ mkdir -p "${TRIM_DIR}/logs.o" "${TRIM_DIR}/logs.e"
 cd "${TRIM_DIR}"
 log_version "trim_galore --version; cutadapt --version" trim_galore.versions.txt
 
-for file in $(sample_ids); do
+ids=$(sample_ids) || exit 1          # a failed substitution inside "for" would not stop the script
+
+for file in $ids; do
     require_file "${RNA_FASTQ_DIR}/${file}/${file}_1.fq.gz" "${RNA_FASTQ_DIR}/${file}/${file}_2.fq.gz"
     trim_galore --paired "${RNA_FASTQ_DIR}/${file}/${file}_1.fq.gz" "${RNA_FASTQ_DIR}/${file}/${file}_2.fq.gz" \
         --fastqc --path_to_cutadapt "$(which cutadapt)" --output_dir "${TRIM_DIR}"

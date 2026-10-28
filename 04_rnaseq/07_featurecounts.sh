@@ -15,7 +15,9 @@ require_file "${GTF}"
 mkdir -p "${FC_DIR}/logs.o" "${FC_DIR}/logs.e"
 cd "${FC_DIR}"
 
-for file in $(sample_ids); do
+ids=$(sample_ids) || exit 1          # a failed substitution inside "for" would not stop the script
+
+for file in $ids; do
     bam="${STAR_DIR}/${file}/${file}_PASS2_resultAligned.sortedByCoord.out.bam"
     require_file "$bam"
     cat > "${file}_featureCounts.sh" <<EOF
