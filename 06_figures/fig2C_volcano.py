@@ -18,9 +18,12 @@ import numpy as np
 import adjustText
 from adjustText import adjust_text
 
-# ── Paths: edit before running ────────────────────────────────────────────────
-DESEQ2_CSV = '/path/to/deseq2/deseq2_results_ecDNA.csv'
-OUT_PDF    = '/path/to/figures/volcano_ecDNA.pdf'
+# ── Paths: edit here or pass on the command line ─────────────────────────────
+# Usage: python fig2C_volcano.py [deseq2_results_ecDNA.csv] [volcano_ecDNA.pdf]
+DESEQ2_CSV = sys.argv[1] if len(sys.argv) > 1 else '/path/to/deseq2/deseq2_results_ecDNA.csv'
+OUT_PDF    = sys.argv[2] if len(sys.argv) > 2 else '/path/to/figures/volcano_ecDNA.pdf'
+if DESEQ2_CSV.startswith('/path/to/') or OUT_PDF.startswith('/path/to/'):
+    sys.exit('usage: python fig2C_volcano.py <deseq2_results_ecDNA.csv> <volcano_ecDNA.pdf>  (or edit the defaults)')
 # ─────────────────────────────────────────────────────────────────────────────
 
 print(f"python {sys.version.split()[0]} | pandas {pd.__version__} | matplotlib {matplotlib.__version__} "

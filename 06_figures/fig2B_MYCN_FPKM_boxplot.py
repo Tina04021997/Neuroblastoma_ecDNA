@@ -7,7 +7,12 @@ import numpy as np
 from scipy import stats
 
 # ── Data ──────────────────────────────────────────────────────────────────────
-df = pd.read_csv('../data/MYCN_FPKM.txt', sep='\t')   # written by 00_build_figure_tables.py
+import sys, os
+# Usage: python fig2B_MYCN_FPKM_boxplot.py [input_table] [out_dir]   (defaults: ../data/MYCN_FPKM.txt, current folder)
+IN_TABLE = sys.argv[1] if len(sys.argv) > 1 else '../data/MYCN_FPKM.txt'   # written by 00_build_figure_tables.py
+out_dir  = sys.argv[2] if len(sys.argv) > 2 else '.'
+os.makedirs(out_dir, exist_ok=True)
+df = pd.read_csv(IN_TABLE, sep='\t')
 
 # ── Style tokens ──────────────────────────────────────────────────────────────
 BG       = 'white'
@@ -90,7 +95,6 @@ ax.legend(handles=legend_patches, fontsize=10.5, frameon=False,
           loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.06))
 
 plt.tight_layout(pad=1.5)
-out_dir = '.'
 fig.savefig(f'{out_dir}/MYCN_FPKM_boxplot.pdf', dpi=900, bbox_inches='tight')
 plt.close(fig)
 print("Saved: MYCN_FPKM_boxplot.pdf")

@@ -24,7 +24,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.ticker import FuncFormatter
 
-# ── MYCN locus (hg19) ────────────────────────────────────────────────────────
+# ── MYCN locus (hg38) ────────────────────────────────────────────────────────
 MYCN_START = 15_940_587
 MYCN_END   = 15_946_097
 
@@ -280,6 +280,7 @@ def process_sample(sample, cn_path, out_dir, cn_cap, ecdna_positive):
     except Exception as exc:
         print(f"  ERROR: {exc}")
         traceback.print_exc()
+        raise
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -327,6 +328,8 @@ def main():
             except Exception:
                 fail += 1
         print(f"\nDone.  {ok} succeeded, {fail} failed.")
+        if fail:
+            raise SystemExit(1)
 
     elif args.cn:
         sample = args.sample or os.path.splitext(

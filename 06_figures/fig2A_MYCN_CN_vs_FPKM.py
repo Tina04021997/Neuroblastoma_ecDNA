@@ -6,7 +6,12 @@ import matplotlib.patches as mpatches
 import numpy as np
 
 # ── Data ──────────────────────────────────────────────────────────────────────
-df = pd.read_csv('../data/FPKM_CN_MYCN.txt', sep='\t')   # written by 00_build_figure_tables.py
+import sys, os
+# Usage: python fig2A_MYCN_CN_vs_FPKM.py [input_table] [out_dir]   (defaults: ../data/FPKM_CN_MYCN.txt, current folder)
+IN_TABLE = sys.argv[1] if len(sys.argv) > 1 else '../data/FPKM_CN_MYCN.txt'   # written by 00_build_figure_tables.py
+out_dir  = sys.argv[2] if len(sys.argv) > 2 else '.'
+os.makedirs(out_dir, exist_ok=True)
+df = pd.read_csv(IN_TABLE, sep='\t')
 
 # ── Style tokens ──────────────────────────────────────────────────────────────
 BG       = 'white'
@@ -82,7 +87,6 @@ ax.legend(handles=legend_patches, fontsize=10.5, frameon=False,
           loc='upper center', ncol=2, bbox_to_anchor=(0.5, 1.06))
 
 plt.tight_layout(pad=1.5)
-out_dir = '.'
 fig.savefig(f'{out_dir}/MYCN_CN_vs_GE.pdf', dpi=900, bbox_inches='tight')
 plt.close(fig)
 print("Saved: MYCN_CN_vs_GE.pdf")
