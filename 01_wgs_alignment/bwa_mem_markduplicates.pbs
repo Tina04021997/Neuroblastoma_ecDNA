@@ -1,6 +1,4 @@
 #!/bin/bash
-#PBS -q <queue>
-#PBS -A <account>
 #PBS -l nodes=1:ppn=28
 #PBS -l walltime=500:00:00
 #PBS -V
@@ -9,7 +7,9 @@
 #PBS -e logs/align.e
 
 # WGS alignment + duplicate marking for one cell line.
-# Submit per sample:   qsub -v SAMPLE=CHP134 -N align_CHP134 bwa_mem_markduplicates.pbs
+# Submit per sample, with the queue and account taken from config.sh (PBS directives cannot read variables):
+#   source config.sh; qsub -q "$PBS_QUEUE" -A "$PBS_ACCOUNT" -v SAMPLE=CHP134 -N align_CHP134 01_wgs_alignment/bwa_mem_markduplicates.pbs
+# (SAMPLE = dna_id column of samples.tsv, the WGS file prefix)
 # BWA-MEM 0.7.17-r1188, SAMtools 1.9, Picard 2.18.27 (conda env evc_main).
 
 set -euo pipefail
