@@ -26,6 +26,11 @@ DATA="$REPO/data"
 for f in master.csv FPKM_CN_MYCN.txt MYCN_FPKM.txt deseq2_gsea/deseq2_results_ecDNA.csv chr2_cn/NGP_cn.txt chr2_cn/SKNYrI_cn.txt; do
   [ -s "$DATA/$f" ] || { echo "missing input: $DATA/$f" >&2; exit 1; }
 done
+[ -s "$REPO/samples.tsv" ] || { echo "missing input: $REPO/samples.tsv" >&2; exit 1; }
+# Cell-line display names (figure labels / titles) = samples.tsv cell_line, the manuscript's cell-line list
+label_of() { awk -F'\t' -v id="$1" 'NR==1{for(i=1;i<=NF;i++) if($i=="cell_line") c=i} NR>1 && $1==id {print $c}' "$REPO/samples.tsv"; }
+NGP_LABEL=$(label_of NGP); SKNFI_LABEL=$(label_of SKNrI)
+[ -n "$NGP_LABEL" ] && [ -n "$SKNFI_LABEL" ] || { echo "cell_line lookup failed in $REPO/samples.tsv (NGP, SKNrI)" >&2; exit 1; }
 for tool in "$PYTHON" "$RSCRIPT" "$JUPYTER"; do command -v "$tool" >/dev/null || { echo "not found: $tool" >&2; exit 1; }; done
 echo "repo: $REPO"; echo "out:  $OUT"; "$PYTHON" --version; "$RSCRIPT" --version 2>&1 | head -1
 
@@ -47,12 +52,12 @@ rm -f "$HERE/neuroblastoma_heatmap.pdf" "$HERE/neuroblastoma_heatmap.png"
 mv "$HERE/neuroblastoma_heatmap.pdf" "$OUT/fig1A_oncoprint.pdf"; mv "$HERE/neuroblastoma_heatmap.png" "$OUT/fig1A_oncoprint.png"
 
 echo "== Fig 1B chr2 copy number (NGP ecDNA+, SKNFI ecDNA-)"
-"$PYTHON" "$HERE/fig1B_chr2_copy_number.py" --cn "$DATA/chr2_cn/NGP_cn.txt"    --sample NGP   --out_dir "$OUT" > "$LOG/fig1B_NGP.log" 2>&1 || fail "Fig 1B NGP" "$LOG/fig1B_NGP.log"
-"$PYTHON" "$HERE/fig1B_chr2_copy_number.py" --cn "$DATA/chr2_cn/SKNYrI_cn.txt" --sample SKNFI --ecdna_negative --out_dir "$OUT" > "$LOG/fig1B_SKNFI.log" 2>&1 || fail "Fig 1B SKNFI" "$LOG/fig1B_SKNFI.log"
+"$PYTHON" "$HERE/fig1B_chr2_copy_number.py" --cn "$DATA/chr2_cn/NGP_cn.txt"    --sample NGP   --label "$NGP_LABEL"   --out_dir "$OUT" > "$LOG/fig1B_NGP.log" 2>&1 || fail "Fig 1B NGP" "$LOG/fig1B_NGP.log"
+"$PYTHON" "$HERE/fig1B_chr2_copy_number.py" --cn "$DATA/chr2_cn/SKNYrI_cn.txt" --sample SKNFI --label "$SKNFI_LABEL" --ecdna_negative --out_dir "$OUT" > "$LOG/fig1B_SKNFI.log" 2>&1 || fail "Fig 1B SKNFI" "$LOG/fig1B_SKNFI.log"
 mv "$OUT/NGP_chr2_cn.png" "$OUT/fig1B_NGP_chr2_cn.png"; mv "$OUT/SKNFI_chr2_cn.png" "$OUT/fig1B_SKNFI_chr2_cn.png"
 
 echo "== Fig 2A / 2B"
-"$PYTHON" "$HERE/fig2A_MYCN_CN_vs_FPKM.py" "$DATA/FPKM_CN_MYCN.txt" "$OUT" > "$LOG/fig2A.log" 2>&1 || fail "Fig 2A" "$LOG/fig2A.log"
+"$PYTHON" "$HERE/fig2A_MYCN_CN_vs_FPKM.py" "$DATA/FPKM_CN_MYCN.txt" "$OUT" "$REPO/samples.tsv" > "$LOG/fig2A.log" 2>&1 || fail "Fig 2A" "$LOG/fig2A.log"
 mv "$OUT/MYCN_CN_vs_GE.pdf" "$OUT/fig2A_MYCN_CN_vs_FPKM.pdf"
 "$PYTHON" "$HERE/fig2B_MYCN_FPKM_boxplot.py" "$DATA/MYCN_FPKM.txt" "$OUT" > "$LOG/fig2B.log" 2>&1 || fail "Fig 2B" "$LOG/fig2B.log"
 mv "$OUT/MYCN_FPKM_boxplot.pdf" "$OUT/fig2B_MYCN_FPKM_boxplot.pdf"

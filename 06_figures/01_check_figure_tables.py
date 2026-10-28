@@ -43,6 +43,8 @@ checks = [
     ("MYCN FPKM: master.csv == Fig 2A == Fig 2B == MYCN_CHEK1_FPKM.csv",
         ((A.MYCN_FPKM.round(2) == B.GE.round(2)) & (A.MYCN_FPKM.round(2) == C.MYCN.round(2)) & (A.MYCN_FPKM.round(2) == D.MYCN.round(2))).all()),
     ("CHEK1 FPKM: master.csv == MYCN_CHEK1_FPKM.csv",     (A.CHEK1_FPKM.round(4) == D.CHEK1.round(4)).all()),
+    ("cell_line (figure labels, Fig 1A/1B/2A): 21 unique non-empty names in samples.tsv",
+        S.cell_line.notna().all() and (S.cell_line.str.strip() != "").all() and S.cell_line.nunique() == 21),
 ]
 bad = 0
 for label, ok in checks:

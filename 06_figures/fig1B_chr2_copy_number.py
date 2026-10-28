@@ -84,6 +84,7 @@ def merge_amp_labels(segs, min_gap):
 
 def plot_chr2(cn_df: pd.DataFrame,
               sample: str,
+              label: str = None,          # title text (default: sample)
               cn_cap: int          = CN_CAP,
               out_path: str        = None,
               ecdna_positive: bool = True):
@@ -238,7 +239,7 @@ def plot_chr2(cn_df: pd.DataFrame,
     # ── Title ────────────────────────────────────────────────────────────────
     tag = "  [ecDNA+]" if ecdna_positive else "  [ecDNA−]"
     fig.suptitle(
-        f"{sample}",
+        f"{label or sample}",
         fontsize=10, fontweight="bold", y=0.97,
         color="#1A1A1A"
     )
@@ -267,7 +268,7 @@ def discover_cn_files(data_dir: str):
     return results
 
 
-def process_sample(sample, cn_path, out_dir, cn_cap, ecdna_positive):
+def process_sample(sample, cn_path, out_dir, cn_cap, ecdna_positive, label=None):
     print(f"\n{'='*55}\nProcessing: {sample}\n{'='*55}")
     try:
         cn_df    = load_cn(cn_path)
@@ -275,7 +276,7 @@ def process_sample(sample, cn_path, out_dir, cn_cap, ecdna_positive):
         print(f"  Chr2 segments: {len(chr2_seg)}  |  "
               f"CN range: {chr2_seg['CN'].min():.0f}–{chr2_seg['CN'].max():.0f}")
         out_path = os.path.join(out_dir, f"{sample}_chr2_cn.png")
-        plot_chr2(cn_df, sample=sample, cn_cap=cn_cap,
+        plot_chr2(cn_df, sample=sample, label=label, cn_cap=cn_cap,
                   out_path=out_path, ecdna_positive=ecdna_positive)
     except Exception as exc:
         print(f"  ERROR: {exc}")
@@ -303,6 +304,8 @@ def main():
                         help="Output folder (default: same as --data_dir)")
     parser.add_argument("--sample",   default=None,
                         help="Sample name override (single-file mode only)")
+    parser.add_argument("--label",    default=None,
+                        help="Panel title (single-file mode); default = sample. make_figures.sh passes samples.tsv cell_line")
     parser.add_argument("--cn_cap",   type=int, default=CN_CAP,
                         help=f"Cap display CN (default: {CN_CAP})")
     parser.add_argument("--ecdna_positive", action="store_true", default=True)
@@ -339,7 +342,7 @@ def main():
         out_dir = args.out_dir or os.path.dirname(os.path.abspath(args.cn))
         os.makedirs(out_dir, exist_ok=True)
         process_sample(sample, args.cn, out_dir,
-                       args.cn_cap, args.ecdna_positive)
+                       args.cn_cap, args.ecdna_positive, label=args.label)
     else:
         parser.print_help()
 

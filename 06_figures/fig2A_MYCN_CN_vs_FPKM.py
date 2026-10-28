@@ -7,11 +7,20 @@ import numpy as np
 
 # ── Data ──────────────────────────────────────────────────────────────────────
 import sys, os
-# Usage: python fig2A_MYCN_CN_vs_FPKM.py [input_table] [out_dir]   (defaults: ../data/FPKM_CN_MYCN.txt, current folder)
+# Usage: python fig2A_MYCN_CN_vs_FPKM.py [input_table] [out_dir] [samples.tsv]
+#   (defaults: ../data/FPKM_CN_MYCN.txt, current folder, ../samples.tsv; point labels = samples.tsv cell_line)
 IN_TABLE = sys.argv[1] if len(sys.argv) > 1 else '../data/FPKM_CN_MYCN.txt'   # written by 00_build_figure_tables.py
 out_dir  = sys.argv[2] if len(sys.argv) > 2 else '.'
 os.makedirs(out_dir, exist_ok=True)
 df = pd.read_csv(IN_TABLE, sep='\t')
+
+# Point labels: samples.tsv `cell_line` (the manuscript's cell-line list), looked up by sample_id
+SAMPLES_TSV = sys.argv[3] if len(sys.argv) > 3 else '../samples.tsv'
+_s = pd.read_csv(SAMPLES_TSV, sep='\t')
+label_map = dict(zip(_s['sample_id'], _s['cell_line']))
+_missing = [x for x in df['Sample'] if x not in label_map or not isinstance(label_map[x], str)]
+if _missing:
+    sys.exit(f'samples.tsv has no cell_line for: {_missing}')
 
 # ── Style tokens ──────────────────────────────────────────────────────────────
 BG       = 'white'
@@ -59,7 +68,7 @@ for _, row in df.iterrows():
         continue
     dx, dy = offsets.get(row['Sample'], (8, 6))
     ax.annotate(
-        row['Sample'],
+        label_map[row['Sample']],
         xy=(row['GE'], row['CN']),
         xytext=(row['GE'] + dx, row['CN'] + dy),
         fontsize=8.5, color=FONT_COL, va='center',
