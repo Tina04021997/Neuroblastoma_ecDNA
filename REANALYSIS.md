@@ -120,8 +120,8 @@ The top-20 Hallmark pathways and their direction are unchanged; NES differ by < 
 
 ## Files
 
-- `original_reads/`: original 21-line read-level matrix, the DESeq2 re-run from the corrected script (identical to the published export), Hallmark results and RS plot.
-- `fragments/`: fragment-level matrix (`-p --countReadPairs -B -C`), DESeq2 results, Hallmark results, dot plot, RS plot.
+- `data/original_2024_readcounts/`: original 21-line read-level matrix, the DESeq2 re-run from the corrected script (identical to the published export) and Hallmark results.
+- `data/deseq2_gsea/`: fragment-level matrix (`-p --countReadPairs -B -C`), DESeq2 results, Hallmark results, RS panel, archived gene-set membership.
 
 ## Decision
 
@@ -151,7 +151,7 @@ Manuscript changes (tracked in v7):
 - Methods: featureCounts sentence now states fragments were counted
   (`-p --countReadPairs -B -C`, Subread 2.0.6) and how the 21-sample matrix is built.
 
-Figures 2C-E regenerated from `2026_rerun/` outputs and placed in the figure file.
+Figures 2C-E regenerated from the fragment-level outputs (now `data/deseq2_gsea/`) and placed in the figure file.
 
 ## Audit point 5 — duplicate handling and StringTie modes (2026-10-23)
 
@@ -233,8 +233,16 @@ Non-amplified values of 2.7–3.0 reflect the 2p copy state of the CNVkit segmen
 rebuilt tables; no visible change. Manuscript: Methods provenance sentence and Fig 2A/1B legends (v8), NGP example
 282→285 and "reflecting 2p copy state" (v9). Original tables kept in `FPKM_2026_rerun/before_CN_update/`.
 
-**Not re-verified (user decision 2026-10-26).** The `ecDNA_counts` / `oncogene_on_ecDNA` columns of `master.csv` and the
-Fig 1B chromosome-2 profile were not re-derived from the final run; the user confirmed them as correct.
+**ecDNA columns cross-checked (2026-10-27).** The `ecDNA_counts` and `oncogene_on_ecDNA` columns of `master.csv` were
+compared with the AmpliconClassifier output of the final runs (batch 1 CBS run, files dated 2024-02-25; batch 2 run, files
+dated 2024-02-12), now archived in `data/ampliconclassifier/`: `<dna_id>_ecDNA_counts.tsv` (ecDNA per line),
+`*_amplicon_classification_profiles.tsv` (class and ecDNA count per amplicon) and `*_gene_list.tsv` (canonical oncogenes on
+ecDNA features). `02_ecDNA/04_check_ecDNA_columns.py` asserts both columns and exits non-zero on a mismatch; all 21 lines
+agree (TR14 5, NGP 2, LAN1 2, twelve amplified lines 1, six non-amplified lines 0; oncogene sets identical). Note that the
+AmpliconArchitect `#Amplicons` value counts amplicons of every class, so it is not the ecDNA count (TR14: 4 amplicons,
+5 ecDNA; SKN-BE2: 2 amplicons, 1 ecDNA; NB69: 1 linear amplicon, 0 ecDNA); the notebook no longer warns on that
+difference. `data/ecDNA_summary/` was confirmed identical to the final-run summaries for both batches. The Fig 1B
+chromosome-2 profile was not re-derived (user decision 2026-10-26).
 
 ## Audit point 6 — software versions (2026-10-26)
 
@@ -271,9 +279,11 @@ text or the Fig 1 legend, so no text change is needed. `data/ecDNA_summary/` in 
 ## Audit points 8, 13, 15 — sample sheet, fail-fast scripts, config.sh (2026-10-26)
 
 **Point 8.** `05_differential_expression/01_deseq2_ecDNA.R` now reads the sample groups from `samples.tsv` (`MYCN_amp`,
-levels `no_amp` < `amp`) instead of a separate `heatmap_condition.csv`, checks that every count column is present, and
-writes `deseq2_sessionInfo.txt`. Re-run locally on `counts_21lines.txt`: `deseq2_results_ecDNA.csv` byte-identical to
-the 2026-10 re-run (486 up / 404 down).
+levels `no_amp` < `amp`) instead of a separate `heatmap_condition.csv`, checks that every count column is present, that
+every label is valid, that the group sizes are exactly 6 `no_amp` / 15 `amp`, and that `MYCN_amp` and `ecDNA_group`
+coincide for all 21 lines (`stopifnot`; the design uses `MYCN_amp`, the Methods describe ecDNA+ vs ecDNA−, and in this
+cohort the two contrasts are the same). It writes `deseq2_sessionInfo.txt`. Re-run locally on `counts_21lines.txt` with
+the assertions in place (2026-10-27): `deseq2_results_ecDNA.csv` byte-identical to the 2026-10 re-run (486 up / 404 down).
 **Points 13/15.** All 15 shell/PBS scripts now `set -euo pipefail`, source `config.sh` (template `config.example.sh`,
 git-ignored copy holds site paths), check their inputs with `require_file`, take sample lists from `samples.tsv` or the
 per-batch `$RNA_LIST`, and log tool versions (`log_version`). No script contains an absolute path. `06_stringtie.sh`
@@ -292,11 +302,63 @@ SLURM job (`-e`, unflagged STAR BAM). `08_merge_counts.sh --join` builds the 21-
 | Group membership | 15 MYCN-amp/ecDNA+ : 6 non-amp/ecDNA− | 15 : 6 | identical lines; `MYCN_amp` and `ecDNA_group` coincide for all 21 (point 8) |
 | DE genes (FDR < 0.05, \|log2FC\| > 1) | 498 up / 374 down (17,815 tested) | 486 up / 404 down (17,135 tested) | fragment counting (point 4); log2FC Pearson r = 0.958 over 35,278 shared genes |
 | MYCN expression, ecDNA+ vs ecDNA− | median 413.8 FPKM; one-sided Mann-Whitney p = 1.8e-05 | median 426.6 FPKM; p = 1.8e-05 | FPKM table rebuilt from StringTie output; ranks unchanged |
-| Replication-stress panel | 29 genes ("n = 30" string in script/legend) | 29 genes (`data/deseq2_gsea/rs_genes.txt`) | point 9 |
+| Replication-stress panel | 29 genes ("n = 30" string in script/legend) | 29 genes (`data/deseq2_gsea/rs_genes.txt`) | point 9; `02_gsea_and_RS_genes.R` and `03_export_FPKM_tables.R` now `stopifnot` 29 unique symbols and that all 29 are present in the DESeq2 results (re-run 2026-10-27: outputs byte-identical) |
 | Hallmark GSEA | 18 of 50 sets FDR < 0.05 | 22 of 50 | NES Pearson r = 0.9998; same top sets (MYC targets V1, E2F, G2M up; IFN-γ/α down); 4 sets newly below FDR 0.05 (estrogen response late, ROS pathway, UPR, UV response down); none lost |
 | Chromothripsis calls per line | 15 positive | 15 positive | `Chromothripsis_status` / `_counts` identical (not re-run) |
-| ecDNA counts / SV burden per line | — | — | identical to 2024 values; ecDNA counts validated against final-run summaries |
+| ecDNA counts / SV burden per line | — | — | identical to 2024 values; ecDNA counts and oncogenes on ecDNA asserted against final-run AmpliconClassifier output (`04_check_ecDNA_columns.py`, 21/21 agree) |
 | MYCN copy number | hand-entered from superseded run | scripted from final run | 10 lines differ by ≤ 2 % (amplified) or < 1 copy (non-amplified) |
+
+## Code review before release (2026-10-27)
+
+An independent read of the day's changes, plus functional tests, found and fixed the following (all verified by
+re-running; no result changed):
+
+- `.gitignore`: a trailing comment on the `figures/` line made the pattern inert; fixed, and the notebook's temporary
+  `06_figures/neuroblastoma_heatmap.*` is ignored too.
+- `06_figures/make_figures.sh`: an R failure could be masked by `|| true` and a previous run's files re-used; the notebook
+  step could fail silently. Every step now logs to `<out_dir>/logs/`, stops on failure with the log tail, clears the GSEA
+  folder before re-running, and the notebook kernel is selectable (`JUPYTER_KERNEL`).
+- All 13 job scripts: `for s in $(sample_ids); do` did not stop on a missing sample list (a failed substitution inside a
+  `for` word list is not caught by `set -e`); replaced by `ids=$(sample_ids) || exit 1`, which is.
+- `config.example.sh`: unquoted `<partition>` placeholders made the template unparsable; quoted, and a guard now stops any
+  script run with an unedited `config.sh`.
+- `03_export_FPKM_tables.R`: takes its four paths as arguments (README usage corrected), stops on placeholders, no longer
+  duplicates `MYCN_FPKM.txt` (single source: `00_build_figure_tables.py`), and sorts ecDNA+ rows first independent of the
+  locale (`data/CHEK1_FPKM.csv` re-written in that order; same rows).
+- `02_gsea_and_RS_genes.R`, `fig2C_volcano.py`: stop with a usage message instead of failing on the placeholder path.
+- `fig1B_chr2_copy_number.py`: exits non-zero on a bad input instead of printing the error and returning 0; locus comment
+  corrected to hg38.
+- Functional tests run: `04_check_ecDNA_columns.py` exits 1 on a corrupted `master.csv`; the DESeq2 group assertions fail
+  on a wrong label and on a `MYCN_amp` / `ecDNA_group` disagreement; `00_build_figure_tables.py` and
+  `03_export_FPKM_tables.R` reproduce the frozen tables byte for byte; `make_figures.sh` produces all panels and the
+  re-computed Hallmark table is identical to the frozen copy.
+
+## Audit point 11 — frozen figure inputs and a documented regeneration command (2026-10-27)
+
+All inputs behind Figures 1 and 2 are in `data/`: `master.csv`, `FPKM_CN_MYCN.txt`, `MYCN_FPKM.txt`, `MYCN_CN.tsv`,
+`MYCN_CHEK1_FPKM.csv`, the AmpliconArchitect summaries (`ecDNA_summary/`), the AmpliconClassifier output
+(`ampliconclassifier/`), the chromosome-2 copy-number tables for NGP and SKNFI (`chr2_cn/`, from
+`04_format_cn_for_shatterseek.py` on the final CNVkit calls; NGP MYCN segment CN = 238), the fragment-level count matrix
+and the final DESeq2 / GSEA results (`deseq2_gsea/`), plus the original 2024 read-level counts and results
+(`original_2024_readcounts/`). `heatmap_condition.csv` is superseded by `samples.tsv`.
+
+`06_figures/make_figures.sh` regenerates every panel from these files with one command. The figure scripts and
+`02_gsea_and_RS_genes.R` now take their input and output paths as arguments (defaults unchanged), so no placeholder
+editing is needed. Verified 2026-10-27 (Python 3.9.13, pandas 2.2.3, matplotlib 3.9.4, scipy 1.13.1, adjustText 0.8;
+R 4.2.2, fgsea 1.22.0, msigdbr 26.1.0): all nine panel files were produced; Fig 2C reports 486 / 404 / 16,245; the
+re-computed `hallmark_GSEA_results.csv` is byte-identical to the frozen copy; the RS panel is 29 / 29 with CHEK1, MCM7,
+FANCD2 and RRM1 below FDR 0.05; the ecDNA-column check passes 21 / 21. Panels match the manuscript figure file
+(`Figure_rerun.pptx`, checked panel by panel on 2026-10-27).
+
+## Audit point 10 — Fig 2E FDR encoding (2026-10-27)
+
+Fig 2E uses two encodings: bar colour at FDR < 0.2 (red higher in ecDNA+, blue higher in ecDNA−, grey otherwise) and
+asterisks at FDR < 0.05 / 0.01 / 0.001. The authors chose to keep the dual encoding (audit option "keep only if
+intentional and clearly described"): the 0.2 colouring is a deliberately lenient, exploratory cut that shows the direction
+of change across the whole 29-gene panel and is not a significance claim; significance is carried by the asterisks only.
+Manuscript v11 states this explicitly in the Methods and in the Fig 2E legend (tracked changes, comments 86–87), and the
+comment in `02_gsea_and_RS_genes.R` was corrected to say the same. No value, colour or star changed: 8 genes are below
+FDR 0.2 and CHEK1 (*), MCM7 (***), FANCD2 (*) and RRM1 (*) are below 0.05, identical in the original and re-run results.
 
 ## Audit point 14 — Figure 3–4 analysis code: not addressed (2026-10-26)
 

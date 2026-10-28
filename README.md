@@ -16,7 +16,7 @@ Figures 3 and 4 (functional assays) are not generated from this repository.
 
 | Panel | Data tables | Plot |
 |---|---|---|
-| 1A | `02_ecDNA/03_extract_MYCN_CN.py` + `05_differential_expression/03_export_FPKM_tables.R` → `06_figures/00_build_figure_tables.py` → `data/master.csv`; ecDNA columns validated against `data/ecDNA_summary/` | `06_figures/fig1A_oncoprint.ipynb` |
+| 1A | `02_ecDNA/03_extract_MYCN_CN.py` + `05_differential_expression/03_export_FPKM_tables.R` → `06_figures/00_build_figure_tables.py` → `data/master.csv`; ecDNA columns checked against `data/ampliconclassifier/` by `02_ecDNA/04_check_ecDNA_columns.py` | `06_figures/fig1A_oncoprint.ipynb` |
 | 1B (ecDNA cycle, NGP) | AmpliconArchitect cycles/graph (`02_ecDNA/01_run_ampliconsuite.sh`) | `02_ecDNA/02_run_cycleviz.sh` |
 | 1B (chr2 copy number) | CNVkit calls → `03_chromothripsis/04_format_cn_for_shatterseek.py` | `06_figures/fig1B_chr2_copy_number.py` |
 | 2A | as 1A → `data/FPKM_CN_MYCN.txt` | `06_figures/fig2A_MYCN_CN_vs_FPKM.py` |
@@ -32,13 +32,16 @@ Every number plotted in Figures 1A, 2A and 2B therefore traces to a file written
 ```
 ├── README.md
 ├── REANALYSIS.md                        # what was re-run during the 2026 code audit, and what changed
-├── samples.tsv                          # 21 lines: sample_id, cell_line, rna_batch, MYCN_amp, ecDNA_group, wgs_id, dna_id, stringtie_mode
+├── samples.tsv                          # 21 lines: sample_id, cell_line, rna_batch, list_order, MYCN_amp, ecDNA_group, ecDNA_count, wgs_id, stringtie_mode, dna_id
 ├── config.example.sh                    # copy to config.sh (git-ignored): paths, scheduler, conda; sourced by every script
 ├── data/                                # scripted tables behind Figs 1A/2A/2B
 │   ├── MYCN_CN.tsv                      # 02_ecDNA/03_extract_MYCN_CN.py
 │   ├── MYCN_CHEK1_FPKM.csv, CHEK1_FPKM.csv   # 05_differential_expression/03_export_FPKM_tables.R
 │   ├── MYCN_FPKM.txt, FPKM_CN_MYCN.txt, master.csv   # 06_figures/00_build_figure_tables.py
-│   └── ecDNA_summary/<sample>_summary.txt   # AmpliconArchitect summaries (final runs); read by fig1A_oncoprint.ipynb
+│   ├── chr2_cn/NGP_cn.txt, SKNYrI_cn.txt   # 03_chromothripsis/04_format_cn_for_shatterseek.py (Fig 1B copy-number panels)
+│   ├── ecDNA_summary/<sample>_summary.txt   # AmpliconArchitect summaries (final runs); read by fig1A_oncoprint.ipynb
+│   ├── ampliconclassifier/              # AmpliconClassifier output of the final runs (<dna_id>_ecDNA_counts.tsv,
+│   │                                    #   *_amplicon_classification_profiles.tsv, *_gene_list.tsv for the 15 amplified lines)
 │   ├── deseq2_gsea/                     # frozen DE/GSEA outputs: counts_21lines.txt, deseq2_results_ecDNA.csv,
 │   │                                    #   hallmark_GSEA_results.csv, rs_genes.txt, gsea_session_versions.txt,
 │   │                                    #   hallmark_genesets_msigdbr_26.1.0.tsv (archived gene-set membership)
@@ -50,7 +53,8 @@ Every number plotted in Figures 1A, 2A and 2B therefore traces to a file written
 ├── 02_ecDNA/
 │   ├── 01_run_ampliconsuite.sh          # PrepareAA: CNVkit (CBS) → AmpliconArchitect → AmpliconClassifier
 │   ├── 02_run_cycleviz.sh               # ecDNA cycle visualization (Fig 1B)
-│   └── 03_extract_MYCN_CN.py            # MYCN copy number per line from AmpliconClassifier / CNVkit output
+│   ├── 03_extract_MYCN_CN.py            # MYCN copy number per line from AmpliconClassifier / CNVkit output
+│   └── 04_check_ecDNA_columns.py        # asserts master.csv ecDNA_counts / oncogene_on_ecDNA == AmpliconClassifier output
 ├── 03_chromothripsis/
 │   ├── 01_delly_call.sh                 # SV calling (DELLY 1.7.2 static binary)
 │   ├── 02_filter_delly_vcf.sh           # PASS calls, chr1–22, X (tab-delimited column checks)
@@ -79,13 +83,15 @@ Every number plotted in Figures 1A, 2A and 2B therefore traces to a file written
     ├── fig1B_chr2_copy_number.py
     ├── fig2A_MYCN_CN_vs_FPKM.py
     ├── fig2B_MYCN_FPKM_boxplot.py
-    └── fig2C_volcano.py
+    ├── fig2C_volcano.py
+    └── make_figures.sh                  # regenerates every Fig 1-2 panel from data/ (point 11)
 ```
 
 ## Usage
 
-1. `cp config.example.sh config.sh` and fill in the paths, scheduler account and conda base. Every shell script sources
-   `config.sh`; none contains an absolute path.
+1. `cp config.example.sh config.sh` and fill in every value (paths, scheduler account, conda base). Every pipeline shell
+   script sources `config.sh` and refuses to run while a placeholder is left; none contains an absolute path.
+   (`06_figures/make_figures.sh` is the exception: it needs no `config.sh`, only the repository's `data/` folder.)
 2. Run the folders in numeric order. Job-generator scripts write one SLURM/PBS script per sample from `samples.tsv`
    (or the per-batch `$RNA_LIST`) and are submitted with `sbatch`/`qsub`; every script checks its inputs, logs the tool
    version and stops on the first error. RNA-seq steps run once per sequencing batch; `08_merge_counts.sh --join`
@@ -94,10 +100,23 @@ Every number plotted in Figures 1A, 2A and 2B therefore traces to a file written
 
 ```bash
 python 02_ecDNA/03_extract_MYCN_CN.py --dir <AmpliconSuite output> --samples samples.tsv --id-column dna_id --out data/MYCN_CN.tsv
-Rscript 05_differential_expression/03_export_FPKM_tables.R          # -> data/MYCN_CHEK1_FPKM.csv, CHEK1_FPKM.csv
+python 02_ecDNA/04_check_ecDNA_columns.py --master data/master.csv --samples samples.tsv --dir data/ampliconclassifier   # exits 1 on mismatch
+Rscript 05_differential_expression/03_export_FPKM_tables.R <stringtie_dir> samples.tsv data/deseq2_gsea/rs_genes.txt data/
+       # <stringtie_dir>: the 21 <sample_id>.gene.abundance.txt files collected into one flat folder -> MYCN_CHEK1_FPKM.csv, CHEK1_FPKM.csv
 python 06_figures/00_build_figure_tables.py --samples samples.tsv --fpkm data/MYCN_CHEK1_FPKM.csv \
        --cn data/MYCN_CN.tsv --master-in data/master.csv --out data/
 ```
+
+4. Regenerate Figures 1 and 2 from the frozen inputs with one command (writes `figures/`, git-ignored):
+
+```bash
+bash 06_figures/make_figures.sh [out_dir]  # PYTHON=... RSCRIPT=... JUPYTER=... JUPYTER_KERNEL=... to pick interpreters
+```
+
+   It runs the ecDNA-column check, executes `fig1A_oncoprint.ipynb`, draws the Fig 1B chromosome-2 panels (NGP, SKNFI),
+   Fig 2A/2B/2C, and re-runs `02_gsea_and_RS_genes.R` for Fig 2D/2E, stopping if the re-computed Hallmark table differs
+   from `data/deseq2_gsea/hallmark_GSEA_results.csv`. The NGP cycle diagram in Fig 1B comes from CycleViz on the cluster
+   (`02_ecDNA/02_run_cycleviz.sh`); Figures 3 and 4 are not generated here.
 
 Notes
 - **STAR 2-pass:** run samples one at a time; each sample rebuilds a shared splice-junction index.
@@ -112,8 +131,9 @@ Notes
 - **Superseded AmpliconSuite run.** An earlier run (PrepareAA from FASTQ, CNVkit `hmm-tumor` segmentation) was replaced by
   the run documented here (from the duplicate-marked BAM, CBS segmentation). The hand-entered copy numbers in the original
   `master.csv` came from the earlier run and were replaced by scripted values from the final run (`REANALYSIS.md`).
-- `master.csv` columns `ecDNA_counts` and `oncogene_on_ecDNA` are curated from AmpliconClassifier output and are checked by
-  `fig1A_oncoprint.ipynb` against the AmpliconArchitect summaries in `data/ecDNA_summary/` (the notebook stops on any mismatch);
+- `master.csv` columns `ecDNA_counts` and `oncogene_on_ecDNA` are curated from AmpliconClassifier output; `04_check_ecDNA_columns.py`
+  asserts them against the final-run `*_ecDNA_counts.tsv` / `*_gene_list.tsv` in `data/ampliconclassifier/` (all 21 lines agree), and
+  `fig1A_oncoprint.ipynb` takes the per-amplicon oncogene assignment from the AmpliconArchitect summaries in `data/ecDNA_summary/`;
   `Chromothripsis_*` and `SV_burden` come from `03_chromothripsis/`; the MYCN/CHEK1 columns are rebuilt by the scripts above.
 
 ## Software versions
