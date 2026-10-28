@@ -8,9 +8,13 @@ library(ggplot2)
 # would otherwise mask them: `rename` and `select`. Running this script in a fresh
 # R session is still recommended.
 
-# ── Paths ──────────────────────────────────────────────────────────────────────
-deseq2_path <- '/path/to/deseq2/deseq2_results_ecDNA.csv'   # output of 01_deseq2_ecDNA.R
-out_dir     <- '/path/to/gsea'
+# ── Paths (edit here or pass as arguments: Rscript 02_gsea_and_RS_genes.R <deseq2_results_ecDNA.csv> <out_dir>) ──
+args        <- commandArgs(trailingOnly = TRUE)
+deseq2_path <- if (length(args) >= 1) args[1] else '/path/to/deseq2/deseq2_results_ecDNA.csv'   # output of 01_deseq2_ecDNA.R
+out_dir     <- if (length(args) >= 2) args[2] else '/path/to/gsea'
+if (any(grepl('^/path/to/', c(deseq2_path, out_dir))))
+  stop('pass <deseq2_results_ecDNA.csv> <out_dir> as arguments (or edit the defaults in this script)')
+dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
 # ── Versions ──────────────────────────────────────────────────────────────────
 # Gene-set membership changes between MSigDB releases, so Hallmark results are tied

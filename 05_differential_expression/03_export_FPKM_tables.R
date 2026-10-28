@@ -4,9 +4,9 @@
 # ============================================================
 # Reads <sample>.gene.abundance.txt (StringTie -A output, 04_rnaseq/06_stringtie_batch{1,2}.sh) for the
 # 21 lines listed in samples.tsv and writes:
-#   MYCN_FPKM.txt        Sample / MYCN / MYCN_amp          -> 06_figures/fig2B_MYCN_FPKM_boxplot.py
-#   MYCN_CHEK1_FPKM.csv  Sample / ecDNA_group / MYCN / CHEK1 -> MYCN_FPKM and CHEK1_FPKM columns of
-#                                                             data/master.csv (Fig 1A oncoprint)
+#   MYCN_CHEK1_FPKM.csv  Sample / ecDNA_group / MYCN / CHEK1 -> 06_figures/00_build_figure_tables.py, which derives
+#                                                             MYCN_FPKM.txt (Fig 2B), FPKM_CN_MYCN.txt (Fig 2A) and the
+#                                                             MYCN_FPKM / CHEK1_FPKM columns of data/master.csv (Fig 1A)
 #   CHEK1_FPKM.csv       Sample / ecDNA_group / FPKM        (kept for backward compatibility)
 # and, optionally, an exploratory RS-gene heatmap (RS_heatmap.png; not a manuscript figure).
 #
@@ -23,12 +23,19 @@ suppressPackageStartupMessages({
   library(RColorBrewer)
 })
 
-# ── Paths: edit before running ───────────────────────────────────────────────
-STRINGTIE_DIR <- "/path/to/stringtie_output"       # folder containing <sample>.gene.abundance.txt ($STRINGTIE_DIR in config.sh)
-SAMPLES_TSV   <- "/path/to/repo/samples.tsv"       # repository sample sheet (sample_id, MYCN_amp, ecDNA_group)
-RS_GENES_TXT  <- "/path/to/repo/data/deseq2_gsea/rs_genes.txt"   # written by 02_gsea_and_RS_genes.R
-OUT_DIR       <- STRINGTIE_DIR
+# ── Paths: pass as arguments (or edit the defaults) ─────────────────────────
+#   Rscript 03_export_FPKM_tables.R <stringtie_dir> <samples.tsv> <rs_genes.txt> <out_dir>
+# <stringtie_dir> must hold the 21 <sample_id>.gene.abundance.txt files in ONE flat folder (06_stringtie_batch1.sh writes
+# them flat; 06_stringtie_batch2.sh writes <sample>/<sample>.gene.abundance.txt -- collect both batches first).
+args          <- commandArgs(trailingOnly = TRUE)
+STRINGTIE_DIR <- if (length(args) >= 1) args[1] else "/path/to/stringtie_output"
+SAMPLES_TSV   <- if (length(args) >= 2) args[2] else "/path/to/repo/samples.tsv"
+RS_GENES_TXT  <- if (length(args) >= 3) args[3] else "/path/to/repo/data/deseq2_gsea/rs_genes.txt"   # written by 02_gsea_and_RS_genes.R
+OUT_DIR       <- if (length(args) >= 4) args[4] else STRINGTIE_DIR
 DRAW_HEATMAP  <- TRUE
+if (any(grepl("^/path/to/", c(STRINGTIE_DIR, SAMPLES_TSV, RS_GENES_TXT))))
+  stop("pass <stringtie_dir> <samples.tsv> <rs_genes.txt> <out_dir> as arguments (or edit the defaults in this script)")
+dir.create(OUT_DIR, showWarnings = FALSE, recursive = TRUE)
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Sample metadata ──────────────────────────────────────────
@@ -69,26 +76,20 @@ gene_fpkm <- function(gene) {
 mycn  <- gene_fpkm("MYCN")  |> dplyr::rename(MYCN  = FPKM)
 chek1 <- gene_fpkm("CHEK1") |> dplyr::rename(CHEK1 = FPKM)
 
-# ── Table 1: MYCN_FPKM.txt (Fig 2B input), in samples.tsv order ──────────────
-mycn_tbl <- samples |>
-  dplyr::select(Sample = sample_id, MYCN_amp) |>
-  dplyr::left_join(mycn, by = "Sample") |>
-  dplyr::mutate(MYCN = round(MYCN, 2),
-                MYCN_amp = MYCN_amp == "amp") |>
-  dplyr::select(Sample, MYCN, MYCN_amp)
-write_tsv(mycn_tbl, file.path(OUT_DIR, "MYCN_FPKM.txt"))
+# (MYCN_FPKM.txt is no longer written here: 00_build_figure_tables.py derives it from MYCN_CHEK1_FPKM.csv, so the
+#  repository has a single source for every figure table.)
 
-# ── Table 2: MYCN + CHEK1 FPKM per line (Fig 1A tracks) ──────────────────────
+# ── Table 1: MYCN + CHEK1 FPKM per line ──────────────────────────────────────
 fpkm_tbl <- samples |>
   dplyr::select(Sample = sample_id, ecDNA_group) |>
   dplyr::left_join(mycn,  by = "Sample") |>
   dplyr::left_join(chek1, by = "Sample")
 write_csv(fpkm_tbl, file.path(OUT_DIR, "MYCN_CHEK1_FPKM.csv"))
 
-# ── Table 3: CHEK1_FPKM.csv (legacy name) ────────────────────────────────────
+# ── Table 2: CHEK1_FPKM.csv (legacy name) ────────────────────────────────────
 chek1_fpkm <- fpkm_tbl |>
   dplyr::select(Sample, ecDNA_group, FPKM = CHEK1) |>
-  dplyr::arrange(dplyr::desc(ecDNA_group), Sample)   # ecDNA+ first, then ecDNA-
+  dplyr::arrange(dplyr::desc(ecDNA_group == "ecDNA+"), Sample)   # ecDNA+ first, then ecDNA- (locale-independent)
 write_csv(chek1_fpkm, file.path(OUT_DIR, "CHEK1_FPKM.csv"))
 print(chek1_fpkm, n = Inf)
 
@@ -125,7 +126,7 @@ if (DRAW_HEATMAP) {
 
   col_anno <- data.frame(ecDNA = ecdna_group[colnames(mat)], row.names = colnames(mat))
   anno_colors <- list(ecDNA = c("ecDNA+" = "#E64B35", "ecDNA-" = "#4DBBD5"))
-  col_order <- order(col_anno$ecDNA, decreasing = TRUE)           # ecDNA+ first
+  col_order <- order(col_anno$ecDNA == "ecDNA+", decreasing = TRUE)   # ecDNA+ first (locale-independent)
 
   png(file.path(OUT_DIR, "RS_heatmap.png"), width = 10, height = 6, units = "in", res = 300)
   pheatmap(
@@ -145,4 +146,4 @@ if (DRAW_HEATMAP) {
   message("Saved: RS_heatmap.png (exploratory)")
 }
 
-message("Saved: MYCN_FPKM.txt, MYCN_CHEK1_FPKM.csv, CHEK1_FPKM.csv")
+message("Saved: MYCN_CHEK1_FPKM.csv, CHEK1_FPKM.csv")
