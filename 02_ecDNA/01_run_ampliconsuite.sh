@@ -5,17 +5,19 @@
 # (envs/ampsuite.yml is a later export of that env; see envs/README.md).
 # GRCh38, CNVkit seeds, --cngain 4.5 --cnsize_min 50000, --downsample -1 (no downsampling), 32 threads.
 # Per-run versions are written by the pipeline to <sample>/<sample>_run_metadata.json.
-# Usage: bash 01_run_ampliconsuite.sh [sample_list.txt]   (default: all 21 lines in samples.tsv)
+# Usage: bash 01_run_ampliconsuite.sh [sample_list.txt]   (default: all 21 lines, dna_id column of samples.tsv = WGS file prefix)
 
 set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/../config.sh"
 
 LIST="${1:-}"
-if [ -z "$LIST" ]; then LIST=$(mktemp); tail -n +2 "${SAMPLES_TSV}" | cut -f1 > "$LIST"; fi
+if [ -z "$LIST" ]; then LIST=$(mktemp); wgs_ids > "$LIST" || exit 1; fi     # default: dna_id column (WGS file prefix)
 mkdir -p "${ECDNA_DIR}/logs.o" "${ECDNA_DIR}/logs.e"
 cd "${ECDNA_DIR}"
 
-for file in $(sample_ids "$LIST"); do
+ids=$(sample_ids "$LIST") || exit 1          # a failed substitution inside "for" would not stop the script
+
+for file in $ids; do
     require_file "${WGS_ALIGN_DIR}/${file}/${file}_tumor_mkdp.bam"
     cat > "${file}_AA.sh" <<EOF
 #!/bin/bash
