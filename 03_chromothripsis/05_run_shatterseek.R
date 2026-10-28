@@ -1,15 +1,28 @@
-library(ShatterSeek)
-library('stringr')
-library(gridExtra)
-library(cowplot)
-library('ggplot2')
-library(GenomicRanges)
+# Usage: Rscript 05_run_shatterseek.R <sample> <sv_dir> <cn_dir> <results_dir> [chromosomes]
+#   <sv_dir>      folder with sv_<sample>.txt   (03_format_sv_for_shatterseek.py)
+#   <cn_dir>      folder with <sample>_cn.txt   (04_format_cn_for_shatterseek.py)
+#   <results_dir> receives <sample>_summary.txt (ShatterSeek chromSummary, read by 06_call_high_confidence_chromothripsis.ipynb)
+#                 and <sample>_CT.pdf (per-chromosome plots)
+#   [chromosomes] comma-separated chromosomes to plot; default "1,2,7,3,12" (the set used for the published run)
+# Run once per sample (env ASCAT: R 4.2.2, ShatterSeek 1.1).
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) < 4) stop("usage: Rscript 05_run_shatterseek.R <sample> <sv_dir> <cn_dir> <results_dir> [chromosomes]")
+SAMPLE      <- args[1]
+SV_DIR      <- file.path(args[2], "sv_")
+CN_DIR      <- paste0(sub("/$", "", args[3]), "/")
+Results_DIR <- paste0(sub("/$", "", args[4]), "/")
+PLOT_CHRS   <- if (length(args) >= 5) trimws(strsplit(args[5], ",")[[1]]) else c("1", "2", "7", "3", "12")
+dir.create(Results_DIR, showWarnings = FALSE, recursive = TRUE)
+for (f in c(paste0(SV_DIR, SAMPLE, ".txt"), paste0(CN_DIR, SAMPLE, "_cn.txt")))
+  if (!file.exists(f)) stop("missing input: ", f)
 
-SAMPLE='NGP'
-# ── Paths: edit before running ──────────────────────────────────────────────
-SV_DIR='/path/to/shatterseek/sv_files/sv_'    
-CN_DIR='/path/to/shatterseek/cn_files/'           
-Results_DIR='/path/to/shatterseek/results/'
+suppressPackageStartupMessages({
+  library(ShatterSeek)
+  library(gridExtra)
+  library(cowplot)
+  library(ggplot2)
+  library(GenomicRanges)
+})
 
 sv = read.delim(paste0(SV_DIR, SAMPLE,'.txt'), sep='\t')
 sv['strand1'] = ifelse(sv$ct == '3to3', '+', ifelse(sv$ct=='5to5', '-', ifelse(sv$ct=='3to5', '+','-')))
@@ -50,54 +63,19 @@ chromothripsis <- shatterseek(
                 seg.sample=CN_data,
                 genome="hg38")
 
-file_path <- paste0(SAMPLE, "_summary.txt")
+file_path <- paste0(Results_DIR, SAMPLE, "_summary.txt")
 write.table(chromothripsis@chromSummary, file = file_path, sep = "\t", quote = FALSE, row.names = FALSE)
 
-### MODIFY THE FOLLOWING CHR2 TO TARGETED ONES ###
-
-plots_chr1 <- plot_chromothripsis(ShatterSeek_output = chromothripsis,
-              chr = "1", sample_name=SAMPLE, genome="hg38")
-plot_chr1 = arrangeGrob(plots_chr1[[1]],
-                         plots_chr1[[2]],
-                         plots_chr1[[3]],
-                         plots_chr1[[4]],
-                         nrow=4,ncol=1,heights=c(0.2,.4,.4,.4))
-
-plots_chr2 <- plot_chromothripsis(ShatterSeek_output = chromothripsis,
-              chr = "2", sample_name=SAMPLE, genome="hg38")
-plot_chr2 = arrangeGrob(plots_chr2[[1]],
-                         plots_chr2[[2]],
-                         plots_chr2[[3]],
-                         plots_chr2[[4]],
-                         nrow=4,ncol=1,heights=c(0.2,.4,.4,.4))
-
-plots_chr7 <- plot_chromothripsis(ShatterSeek_output = chromothripsis,
-              chr = "7", sample_name=SAMPLE, genome="hg38")
-plot_chr7 = arrangeGrob(plots_chr7[[1]],
-                         plots_chr7[[2]],
-                         plots_chr7[[3]],
-                         plots_chr7[[4]],
-                         nrow=4,ncol=1,heights=c(0.2,.4,.4,.4))
-
-plots_chr3 <- plot_chromothripsis(ShatterSeek_output = chromothripsis,
-              chr = "3", sample_name=SAMPLE, genome="hg38")
-plot_chr3 = arrangeGrob(plots_chr3[[1]],
-                         plots_chr3[[2]],
-                         plots_chr3[[3]],
-                         plots_chr3[[4]],
-                         nrow=4,ncol=1,heights=c(0.2,.4,.4,.4))
-
-plots_chr12 <- plot_chromothripsis(ShatterSeek_output = chromothripsis,
-              chr = "12", sample_name=SAMPLE, genome="hg38")
-plot_chr12 = arrangeGrob(plots_chr12[[1]],
-                         plots_chr12[[2]],
-                         plots_chr12[[3]],
-                         plots_chr12[[4]],
-                         nrow=4,ncol=1,heights=c(0.2,.4,.4,.4))
-
+# One 4-row panel (SV arcs, CN, oscillation states, breakpoints) per chromosome in PLOT_CHRS
+pdf(NULL)                                   # arrangeGrob would otherwise open Rplots.pdf in the working directory
+plot_list <- lapply(PLOT_CHRS, function(chr) {
+  p <- plot_chromothripsis(ShatterSeek_output = chromothripsis, chr = chr, sample_name = SAMPLE, genome = "hg38")
+  arrangeGrob(p[[1]], p[[2]], p[[3]], p[[4]], nrow = 4, ncol = 1, heights = c(0.2, .4, .4, .4))
+})
 
 pdf_path <- paste0(Results_DIR, SAMPLE, '_CT.pdf')
 
-CT <- plot_grid(plot_chr1, plot_chr2, plot_chr7, plot_chr3, plot_chr12)
+CT <- plot_grid(plotlist = plot_list)
 ggsave(pdf_path, CT, device = "pdf", width = 10, height = 10)
+invisible(dev.off())
 
