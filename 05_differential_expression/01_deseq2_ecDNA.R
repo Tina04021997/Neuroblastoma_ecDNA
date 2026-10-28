@@ -1,8 +1,17 @@
 # ── Setup ─────────────────────────────────────────────────────────────────────
 # DESeq2 1.36.0 (R 4.2.2): ecDNA+ (MYCN amp, n = 15) vs ecDNA- (MYCN non-amp, n = 6), design ~ MYCN_amp,
 # reference level no_amp, default Wald test / BH FDR. Sample groups come from samples.tsv (audit point 8).
-setwd("/path/to/deseq2")                         # folder containing counts_21lines.txt; outputs are written here
-SAMPLES_TSV <- "/path/to/repo/samples.tsv"       # repository sample sheet: sample_id, MYCN_amp (amp / no_amp), ...
+# Usage: Rscript 01_deseq2_ecDNA.R <deseq_dir> <samples.tsv>
+#   <deseq_dir>   folder containing counts_21lines.txt (08_merge_counts.sh --join); outputs are written here
+#   <samples.tsv> repository sample sheet: sample_id, MYCN_amp (amp / no_amp), ecDNA_group, ...
+args        <- commandArgs(trailingOnly = TRUE)
+DESEQ_DIR   <- if (length(args) >= 1) args[1] else "/path/to/deseq2"
+SAMPLES_TSV <- if (length(args) >= 2) args[2] else "/path/to/repo/samples.tsv"
+if (any(grepl("^/path/to/", c(DESEQ_DIR, SAMPLES_TSV))))
+  stop("usage: Rscript 01_deseq2_ecDNA.R <deseq_dir> <samples.tsv>")
+if (!dir.exists(DESEQ_DIR)) stop("deseq_dir not found: ", DESEQ_DIR)
+SAMPLES_TSV <- normalizePath(SAMPLES_TSV, mustWork = TRUE)   # resolve before changing directory
+setwd(DESEQ_DIR)
 
 # ── Load packages ─────────────────────────────────────────────────────────────
 library("tidyverse")
