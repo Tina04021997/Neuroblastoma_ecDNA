@@ -7,7 +7,7 @@ in the Methods and README.
 | Stage (scripts) | Tool | Run-time version | Evidence | Manuscript |
 |---|---|---|---|---|
 | WGS alignment (`01_wgs_alignment/`) | bwa | 0.7.17 | `envs/evc_main.yml` | not stated |
-| | Picard MarkDuplicates | 2.18.27 | `envs/evc_main.yml` | 2.18.27 |
+| | Picard MarkDuplicates | 2.18.27 | `envs/evc_main.yml` | not stated (only the RNA-seq Picard 3.0.0 is given) |
 | | SAMtools | 1.9 | in env `evc_main` at run time (`01_wgs_alignment/bwa_mem_markduplicates.pbs` header); later moved to a separate env, so absent from `evc_main.yml` | not stated |
 | | GATK | 4.1.4.1 | `envs/evc_main.yml` | not stated |
 | ecDNA (`02_ecDNA/01_run_ampliconsuite.sh`) | AmpliconSuite-pipeline (PrepareAA.py, git clone) | 1.2.2 | `<sample>_run_metadata.json`, `PAA_version` | 1.2.2 |
