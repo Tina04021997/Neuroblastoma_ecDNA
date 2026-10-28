@@ -58,6 +58,7 @@ statement for any accession numbers.
 ```
 ├── README.md
 ├── REANALYSIS.md                        # what was re-run during the 2026 code audit, and what changed
+├── AUDIT_RESPONSE.md                    # point-by-point response to the audit checklist and the before/after table
 ├── samples.tsv                          # 21 lines: sample_id, cell_line, rna_batch, list_order, MYCN_amp, ecDNA_group, ecDNA_count, wgs_id, stringtie_mode, dna_id
 ├── config.example.sh                    # copy to config.sh (git-ignored): paths, scheduler, conda; sourced by every script
 ├── data/                                # scripted tables behind Figs 1A/2A/2B
@@ -97,14 +98,15 @@ statement for any accession numbers.
 │   ├── 06_stringtie_batch1.sh           # FPKM, reference-guided assembly mode, on the duplicate-flagged BAM
 │   ├── 06_stringtie_batch2.sh           # FPKM, reference-only mode (-e), on the STAR BAM
 │   ├── 07_featurecounts.sh              # fragment counts (-p --countReadPairs), duplicates retained
-│   ├── 08_merge_counts.sh               # gene × sample matrix, joined on Ensembl gene ID (fails on ID mismatch)
-│   └── 08b_featurecounts_sanity_check.sh
+│   ├── 08_merge_counts.sh               # gene × sample matrix; runs 08b first and aborts on any gene-ID mismatch
+│   └── 08b_featurecounts_sanity_check.sh  # gene-ID column identical (content and order) across samples
 ├── 05_differential_expression/
 │   ├── 01_deseq2_ecDNA.R                # ecDNA+ vs ecDNA− (groups from samples.tsv; reference level ecDNA−); args: <deseq_dir> <samples.tsv>
 │   ├── 02_gsea_and_RS_genes.R           # Hallmark GSEA (fgsea, seed 42, MSigDB 2026.1.Hs), 29 RS genes
 │   └── 03_export_FPKM_tables.R          # MYCN / CHEK1 FPKM from StringTie gene abundance tables; RS heatmap
 └── 06_figures/
     ├── 00_build_figure_tables.py        # assembles data/MYCN_FPKM.txt, FPKM_CN_MYCN.txt, master.csv
+    ├── 01_check_figure_tables.py        # asserts IDs / MYCN status / CN / FPKM agree across all figure tables (point 12)
     ├── fig1A_oncoprint.ipynb
     ├── fig1B_chr2_copy_number.py
     ├── fig2A_MYCN_CN_vs_FPKM.py
@@ -131,6 +133,7 @@ Rscript 05_differential_expression/03_export_FPKM_tables.R <stringtie_dir> sampl
        # <stringtie_dir>: the 21 <sample_id>.gene.abundance.txt files collected into one flat folder -> MYCN_CHEK1_FPKM.csv, CHEK1_FPKM.csv
 python 06_figures/00_build_figure_tables.py --samples samples.tsv --fpkm data/MYCN_CHEK1_FPKM.csv \
        --cn data/MYCN_CN.tsv --master-in data/master.csv --out data/
+python 06_figures/01_check_figure_tables.py --samples samples.tsv --data data/     # exits 1 if any table disagrees
 ```
 
 4. Regenerate Figures 1 and 2 from the frozen inputs with one command (writes `figures/`, git-ignored):
@@ -139,7 +142,7 @@ python 06_figures/00_build_figure_tables.py --samples samples.tsv --fpkm data/MY
 bash 06_figures/make_figures.sh [out_dir]  # PYTHON=... RSCRIPT=... JUPYTER=... JUPYTER_KERNEL=... to pick interpreters
 ```
 
-   It runs the ecDNA-column check, executes `fig1A_oncoprint.ipynb`, draws the Fig 1B chromosome-2 panels (NGP, SKNFI),
+   It runs the ecDNA-column and figure-table cross-checks, executes `fig1A_oncoprint.ipynb`, draws the Fig 1B chromosome-2 panels (NGP, SKNFI),
    Fig 2A/2B/2C, and re-runs `02_gsea_and_RS_genes.R` for Fig 2D/2E, stopping if the re-computed Hallmark table differs
    from `data/deseq2_gsea/hallmark_GSEA_results.csv`. The NGP cycle diagram in Fig 1B comes from CycleViz on the cluster
    (`02_ecDNA/02_run_cycleviz.sh`); Figures 3 and 4 are not generated here.

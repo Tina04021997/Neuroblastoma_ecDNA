@@ -153,6 +153,40 @@ Manuscript changes (tracked in v7):
 
 Figures 2C-E regenerated from the fragment-level outputs (now `data/deseq2_gsea/`) and placed in the figure file.
 
+## Audit points 1–4 (Priority 1) — fixes and verification record (2026-10-19 to 2026-10-27)
+
+**Point 1 — DELLY VCF filter.** Original `02_filter_delly_vcf.sh` used `awk '/^chr(…)\s.*\sPASS\s/'`; `\s` is a
+GNU-awk extension (on BSD awk the same command keeps 0 of 12,738 PASS records of CHP134). Replaced by explicit
+tab-delimited column tests (`$1 ~ /^chr([1-9]|1[0-9]|2[0-2]|X)$/ && $7 == "PASS"`), with a stop if a sample keeps no
+record. Verification (2026-10-27): applied to the 21 DELLY 1.7.2 VCFs (fileDate 2026-02-13), the fixed filter
+reproduces byte for byte the 21 `<sample>_sv.txt` files that were fed to ShatterSeek in the 2026 run (CHP134: 10,435 of
+12,738 PASS records kept; the 2,303 dropped are on unplaced/decoy contigs, chrM and chrY; 7,516 non-PASS records
+excluded), so variant counts, chromosome distribution and the ShatterSeek calls (17 positive lines, 30 events) are
+unchanged by the fix.
+
+**Point 2 — DESeq2 count-matrix input.** Original `01_deseq2_ecDNA.R` read `merged_counts.txt` (versioned Ensembl IDs)
+and took groups from a separate `heatmap_condition.csv`. It now reads the version-stripped `counts_21lines.txt` written
+by `08_merge_counts.sh --join`, strips any residual version suffix defensively, takes groups from `samples.tsv`, and
+stops unless > 50 % of IDs map to a symbol. Mapping yield on the 21-line matrix: 35,377 of 62,700 Ensembl IDs
+(56.4 %; the remainder are unannotated/novel GENCODE IDs with no org.Hs.eg.db symbol), 99 duplicate-symbol rows dropped
+(first occurrence kept, GTF order). Re-run on the original read-level matrix reproduces the published 498 / 374 DE genes
+with identical log2FC and padj; the fragment-level matrix gives 486 / 404 (point 4, table below).
+
+**Point 3 — gene-ID-safe merge.** Original step 4 pasted count columns positionally. `08_merge_counts.sh` now runs
+`08b_featurecounts_sanity_check.sh` itself before pasting; 08b writes `reference_column.txt` and compares every sample's
+gene-ID column with it (content and order), and the merge aborts on any mismatch. `--join` additionally requires
+identical gene-ID columns between the two batch matrices and no versioned IDs. Verification (2026-10-27, synthetic
+featureCounts files): well-formed inputs merge; one sample with shuffled rows → "MISMATCH … gene IDs differ", exit 1,
+nothing merged; one sample with a missing gene → exit 1.
+
+**Point 4 — paired-end featureCounts.** Documented in the first section of this file: `-p` alone counted reads in
+Subread 2.0.6; re-counted with `-p --countReadPairs -B -C`; all downstream numbers re-derived and compared below.
+
+**Point 12 — cross-check across figures.** `06_figures/01_check_figure_tables.py` (also run by `make_figures.sh`)
+asserts that sample IDs, MYCN status, ecDNA group and count, MYCN copy number and MYCN / CHEK1 FPKM agree across
+`samples.tsv`, `master.csv` (Fig 1A), `FPKM_CN_MYCN.txt` (Fig 2A), `MYCN_FPKM.txt` (Fig 2B), `MYCN_CN.tsv` and
+`MYCN_CHEK1_FPKM.csv`: 10 of 10 checks pass for all 21 lines (2026-10-27); a flipped label is caught (exit 1).
+
 ## Audit point 5 — duplicate handling and StringTie modes (2026-10-23)
 
 **Chains actually executed**
